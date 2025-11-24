@@ -75,7 +75,10 @@ public class Turret {
         // 1. Get Limelight Data
         if (allianceColor == "red") {
             limelight.pipelineSwitch(0);
+        } else if (allianceColor == "blue") {
+            limelight.pipelineSwitch(1);
         }
+
         if (llResult != null && llResult.isValid()) {
             tx = llResult.getTx();
             ty = llResult.getTy();
