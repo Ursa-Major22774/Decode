@@ -51,7 +51,7 @@ public class RedTeleOp extends OpMode {
 
     @Override
     public void start() {
-        // follower.startTeleOp();
+         follower.startTeleOpDrive();
     }
 
     @Override
@@ -74,16 +74,18 @@ public class RedTeleOp extends OpMode {
         }
         // Right Trigger = Shoot + Open Gate
         else if (gamepad1.right_trigger > 0.1) {
-            // Ensure flywheel is spinning before opening gate
-            turret.openGate();
             // Keep transfer lifting/feeding to ensure ball hits flywheel
             transfer.feed();
             intake.stop();
+
+            // Run Shoot Sequence
+            turret.shoot(getRuntime());
         }
         // Default State: Hold the ball
         else {
             intake.stop();
             turret.closeGate();
+            turret.stopFlywheel();
             // This applies the "Stall" voltage to keep ball from falling
             transfer.hold(getBatteryVoltage(hardwareMap));
         }

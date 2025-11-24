@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.resources;
 
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.VoltageUnit; // Import added here
 import java.util.List;
@@ -82,5 +84,24 @@ public class Utilities {
         while (degrees > 180) degrees -= 360;
         while (degrees < -180) degrees += 360;
         return degrees;
+    }
+
+    public static double rpmToTicksPerSec(double rpm) {
+        // RPM / 60 = Revolutions Per Second
+        // RPS * TicksPerRev = Ticks Per Second
+        // 288 = Ticks Per Revolution for REV Core Hex Motor
+        return (rpm / 60.0) * 288;
+    }
+
+    public static double ticksPerSecToRpm(double ticks) {
+        // RPM / 60 = Revolutions Per Second
+        // RPS * TicksPerRev = Ticks Per Second
+        // 288 = Ticks Per Revolution for REV Core Hex Motor
+        return (ticks / 288.0) * 60;
+    }
+
+    public static double getRpm(DcMotorEx motor) {
+        double ticksPerSecond = motor.getVelocity();
+        return ticksPerSecToRpm(ticksPerSecond);
     }
 }

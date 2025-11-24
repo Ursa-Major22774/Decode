@@ -7,6 +7,11 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.resources.VelocityPIDFController;
 import org.firstinspires.ftc.teamcode.resources.Utilities;
+import org.slf4j.helpers.Util;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
 
 public class Turret {
 
@@ -19,6 +24,18 @@ public class Turret {
 
     // Controllers
     private VelocityPIDFController flywheelController;
+
+    // --- TIMING/STATE VARIABLES ---
+    private double gateOpenedTime = 0; // Stores the time (in seconds) the gate was opened
+    private ShootingState currentShootingState = ShootingState.IDLE;
+    private final double SHOOT_DELAY_SECONDS = 0.5; // 500 ms delay
+
+    public enum ShootingState {
+        IDLE,             // Ready to spin up
+        SPINNING_UP,      // Waiting for flywheel to hit target RPM
+        FEEDING,          // Gate is open, transferring balls
+        RELOAD            // Gate closing, waiting to go back to IDLE
+    }
 
     // Constants (TUNING REQUIRED)
     private final double GATE_OPEN = 0.5;
@@ -101,16 +118,56 @@ public class Turret {
         targetRPM = Utilities.linearPredict(distance, RPM_M, RPM_B);
     }
 
+    public boolean shoot(double currentTime) {
+        double currentRPM = Utilities.getRpm(flywheelMotor);
+        boolean isFlywheelReady = Math.abs(targetRPM - currentRPM) <= 50;
+
+        switch (currentShootingState) {
+            case IDLE:
+            case SPINNING_UP:
+                // We stay in SPINNING_UP until the flywheel is ready
+                if (isFlywheelReady && targetRPM > 0) {
+                    // Transition to feeding (open gate)
+                    currentShootingState = ShootingState.FEEDING;
+                    openGate();
+                    gateOpenedTime = currentTime; // Start the 500ms timer
+                }
+                break;
+
+            case FEEDING:
+                // Check if 500ms has elapsed since the gate opened
+                if (currentTime >= gateOpenedTime + SHOOT_DELAY_SECONDS) {
+                    closeGate();
+                    currentShootingState = ShootingState.RELOAD;
+                }
+                break;
+
+            case RELOAD:
+                // Give a moment for the servo to finish closing, then stop flywheel
+                // Note: We don't really need a second delay here, but we could add one.
+                currentShootingState = ShootingState.IDLE;
+                stopFlywheel(); // Reset target RPM to 0
+                return false; // Sequence finished
+
+            default:
+                // Should not happen
+                currentShootingState = ShootingState.IDLE;
+                break;
+        }
+
+        return currentShootingState != ShootingState.IDLE;
+    }
+
     /**
      * UPDATE LOOP
      * Must be called every cycle to keep the flywheel PID running.
      */
     public void update(double currentVoltage) {
-        // CHANGE: Get Position instead of Velocity
+        // Get Position
         double currentTicks = flywheelMotor.getCurrentPosition();
 
         // Convert Target RPM to Target Ticks-Per-Second
-        double targetTPS = rpmToTicksPerSec(targetRPM);
+        double targetTPS = Utilities.rpmToTicksPerSec(targetRPM);
 
         // Calculate power needed
         double power = flywheelController.calculate(targetTPS, currentTicks);
@@ -119,12 +176,6 @@ public class Turret {
         double safePower = Utilities.voltageCompensate(power, currentVoltage);
 
         flywheelMotor.setPower(safePower);
-    }
-
-    private double rpmToTicksPerSec(double rpm) {
-        // RPM / 60 = Revolutions Per Second
-        // RPS * TicksPerRev = Ticks Per Second
-        return (rpm / 60.0) * TICKS_PER_REV;
     }
 
     public void openGate() {
