@@ -329,7 +329,7 @@ class TurnTuner extends OpMode {
  */
 class ForwardVelocityTuner extends OpMode {
     private final ArrayList<Double> velocities = new ArrayList<>();
-    public static double DISTANCE = 100;
+    public static double DISTANCE = 72;
     public static double RECORD_NUMBER = 10;
 
     private boolean end;
