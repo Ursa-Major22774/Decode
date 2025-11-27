@@ -54,10 +54,13 @@ public class Turret {
     private final double RPM_M = 10.5;
     private final double RPM_B = 1000;
 
+    // Limelight Results
+    LLResult llResult;
+
     // Limelight Mounting math
-    private final double CAMERA_HEIGHT_INCHES = 10.0;
-    private final double TARGET_HEIGHT_INCHES = 25.0; // Height of the bucket/goal
-    private final double CAMERA_MOUNT_ANGLE = 20.0; // Degrees
+    private final double CAMERA_HEIGHT_INCHES = 11.097;
+    private final double TARGET_HEIGHT_INCHES = 41.3386; // Height of the bucket/goal
+    private final double CAMERA_MOUNT_ANGLE = 12.261; // Degrees
 
     // Tracking
     private double targetRPM = 0;
@@ -85,7 +88,6 @@ public class Turret {
      * 4. Set Flywheel RPM.
      */
     public void aimAndReady(String allianceColor) {
-        LLResult llResult = limelight.getLatestResult();
         double tx = 0;
         double ty = 0;
 
@@ -174,6 +176,8 @@ public class Turret {
 
         // Apply voltage compensation
         double safePower = Utilities.voltageCompensate(power, currentVoltage);
+
+        llResult = limelight.getLatestResult();
 
         flywheelMotor.setPower(safePower);
     }
