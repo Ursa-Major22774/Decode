@@ -17,7 +17,7 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
-@TeleOp(name = "Red TeleOp", group = "Competition")
+@TeleOp(name = "Red TeleOp", group = "Competition TeleOp")
 public class RedTeleOp extends OpMode {
 
     // Subsystems
