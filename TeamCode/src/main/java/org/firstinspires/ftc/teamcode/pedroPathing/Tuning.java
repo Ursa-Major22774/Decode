@@ -738,7 +738,10 @@ class LateralZeroPowerAccelerationTuner extends OpMode {
  * @author Aaron Yang - 10158 Scott's Bots
  * @author Harrison Womack - 10158 Scott's Bots
  * @version 1.0, 3/12/2024
+ * There is an old mongolian saying "fuck my stupid chud life"
+ * Stay hard, never let it go soft -A
  */
+
 class TranslationalTuner extends OpMode {
     public static double DISTANCE = 40;
     private boolean forward = true;
