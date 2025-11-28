@@ -64,14 +64,15 @@ public class RedAuto extends OpMode {
         panelsTelemetry.update(telemetry);
     }
 
+    @Configurable
     public static class Paths {
-        public PathChain Path1;
-        public PathChain Path2;
-        public PathChain Path3;
-        public PathChain Path4;
-        public PathChain Path5;
-        public PathChain Path6;
-        public PathChain Path7;
+        public static PathChain Path1;
+        public static PathChain Path2;
+        public static PathChain Path3;
+        public static PathChain Path4;
+        public static PathChain Path5;
+        public static PathChain Path6;
+        public static PathChain Path7;
 
         public Paths(Follower follower) {
             Path1 = follower

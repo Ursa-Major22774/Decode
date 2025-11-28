@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -12,7 +13,7 @@ import org.slf4j.helpers.Util;
 import java.util.Timer;
 import java.util.TimerTask;
 
-
+@Configurable
 public class Turret {
 
     // Hardware
@@ -44,15 +45,14 @@ public class Turret {
     // Motor Constants
     // Rev HD Hex Motor = 28 ticks per rev (internal).
     // If you have a gearbox (e.g., 3.7:1), multiply this by gear ratio.
-    private final double TICKS_PER_REV = 28.0;
 
     // Regression Constants for Pitch (y = mx + b)
-    private final double PITCH_M = 0.002;
-    private final double PITCH_B = 0.1;
+    private static double PITCH_M = 0.002;
+    private static double PITCH_B = 0.1;
 
     // Regression Constants for RPM (y = mx + b)
-    private final double RPM_M = 10.5;
-    private final double RPM_B = 1000;
+    private static double RPM_M = 10.5;
+    private static double RPM_B = 1000;
 
     // Limelight Results
     LLResult llResult;
