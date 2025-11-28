@@ -11,6 +11,9 @@ import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 @Autonomous(name = "Red Auto", group = "Competition Autos")
 @Configurable
@@ -21,6 +24,9 @@ public class RedAuto extends OpMode {
     private Timer pathTimer, opmodeTimer;
     private int pathState = 1; // Current autonomous path state (state machine)
     private Paths paths; // Paths defined in the Paths class
+    private Intake intake;
+//    private Transfer transfer;
+//    private Turret turret;
 
     @Override
     public void init() {
@@ -37,6 +43,11 @@ public class RedAuto extends OpMode {
         pathTimer = new Timer();
         opmodeTimer = new Timer();
         opmodeTimer.resetTimer();
+
+        intake = new Intake(hardwareMap);
+//        transfer = new Transfer(hardwareMap);
+//        turret = new Turret(hardwareMap);
+
 
     }
 
@@ -132,12 +143,14 @@ public class RedAuto extends OpMode {
                 break;
             case 2:
                 if (!follower.isBusy()){
+                    intake.intake();
                     follower.followPath(paths.Path2);
                     setPathState(pathState + 1);
                 }
                 break;
             case 3:
                 if (!follower.isBusy()){
+                    intake.stop();
                     follower.followPath(paths.Path3);
                     setPathState(pathState + 1);
                 }
@@ -150,12 +163,14 @@ public class RedAuto extends OpMode {
                 break;
             case 5:
                 if (!follower.isBusy()){
+                    intake.intake();
                     follower.followPath(paths.Path5);
                     setPathState(pathState + 1);
                 }
                 break;
             case 6:
                 if (!follower.isBusy()){
+                    intake.stop();
                     follower.followPath(paths.Path6);
                     setPathState(pathState + 1);
                 }

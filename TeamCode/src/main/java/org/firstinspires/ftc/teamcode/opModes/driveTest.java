@@ -16,6 +16,9 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @TeleOp(name = "Drive Test", group = "Testing")
@@ -23,6 +26,8 @@ public class driveTest extends OpMode {
 
     // Subsystems
     private Intake intake;
+
+    private DcMotorEx flywheel;
 
     // Pedro Pathing Follower (Handles Drivetrain)
     private Follower follower;
@@ -38,6 +43,9 @@ public class driveTest extends OpMode {
 
         // 2. Initialize Subsystems
         intake = new Intake(hardwareMap);
+        flywheel = hardwareMap.get(DcMotorEx.class, "intakeMotor");
+        flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        flywheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // 3. Initialize PedroPathing
         follower = Constants.createFollower(hardwareMap);
@@ -69,6 +77,13 @@ public class driveTest extends OpMode {
             intake.intake();
         } else {
             intake.stop();
+        }
+
+        // Flywheel Logic
+        if (gamepad1.right_trigger > 0.1) {
+            flywheel.setPower(1);
+        } else {
+            flywheel.setPower(0);
         }
 
         // Telemetry
