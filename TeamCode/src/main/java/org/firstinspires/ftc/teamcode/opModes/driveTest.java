@@ -64,8 +64,8 @@ public class driveTest extends OpMode {
         // --- 1. DRIVETRAIN (PedroPathing) ---
         // Stick Y is inverted (Up is negative on standard gamepads)
         follower.setTeleOpDrive(
-                -gamepad1.left_stick_x, // Forward/Back
-                -gamepad1.left_stick_y, // Strafe
+                -gamepad1.left_stick_y, // Forward/Back
+                -gamepad1.left_stick_x, // Strafe
                 -gamepad1.right_stick_x * 0.6, // Turn
                 false // TRUE = Robot Centric
         );
