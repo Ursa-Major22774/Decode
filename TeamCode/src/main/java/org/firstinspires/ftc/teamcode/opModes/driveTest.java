@@ -82,6 +82,13 @@ public class driveTest extends OpMode {
         } else {
             intake.stop();
         }
+        if (gamepad1.dpad_right) {
+            servoPosition += 0.1;
+        } else if (gamepad1.dpad_left) {
+            servoPosition -= 0.1;
+        }
+        gateServo.setPosition(servoPosition);
+
         servoPosition = gateServo.getPosition();
 
         // Flywheel Logic
@@ -92,6 +99,7 @@ public class driveTest extends OpMode {
 //        }
 
         // Telemetry
+        telemetry.addLine("Use Dpad left and right to adjust gate position");
         telemetry.addData("Servo Postion", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
