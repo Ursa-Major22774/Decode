@@ -39,20 +39,27 @@ public class Turret {
     }
 
     // Constants (TUNING REQUIRED)
-    private final double GATE_OPEN = 0.5;
-    private final double GATE_CLOSED = 0.0;
+    public static double GATE_OPEN = 0.5;
+    public static double GATE_CLOSED = 0.0;
+
+    // Velocity PIDF Constants
+    public static double kP = 0.1;
+    public static double kI = 0.0;
+    public static double kD = 0.0;
+    public static double kF = 0.2;
+
 
     // Motor Constants
     // Rev HD Hex Motor = 28 ticks per rev (internal).
     // If you have a gearbox (e.g., 3.7:1), multiply this by gear ratio.
 
     // Regression Constants for Pitch (y = mx + b)
-    private static double PITCH_M = 0.002;
-    private static double PITCH_B = 0.1;
+    public static double PITCH_M = 0.002;
+    public static double PITCH_B = 0.1;
 
     // Regression Constants for RPM (y = mx + b)
-    private static double RPM_M = 10.5;
-    private static double RPM_B = 1000;
+    public static double RPM_M = 10.5;
+    public static double RPM_B = 1000;
 
     // Limelight Results
     LLResult llResult;
@@ -74,7 +81,7 @@ public class Turret {
 
         // Initialize Velocity PIDF (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
-        flywheelController = new VelocityPIDFController(0.0, 0.0, 0.0, 1.3);
+        flywheelController = new VelocityPIDFController(kP, kI, kD, kF);
 
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
