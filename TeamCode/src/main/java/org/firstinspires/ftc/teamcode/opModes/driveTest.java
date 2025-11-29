@@ -27,7 +27,7 @@ public class driveTest extends OpMode {
     // Subsystems
     private Intake intake;
 
-    private DcMotorEx flywheel;
+//    private DcMotorEx flywheel;
 
     // Pedro Pathing Follower (Handles Drivetrain)
     private Follower follower;
@@ -43,9 +43,9 @@ public class driveTest extends OpMode {
 
         // 2. Initialize Subsystems
         intake = new Intake(hardwareMap);
-        flywheel = hardwareMap.get(DcMotorEx.class, "intakeMotor");
-        flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        flywheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+//        flywheel = hardwareMap.get(DcMotorEx.class, "intakeMotor");
+//        flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+//        flywheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // 3. Initialize PedroPathing
         follower = Constants.createFollower(hardwareMap);
@@ -66,8 +66,8 @@ public class driveTest extends OpMode {
         follower.setTeleOpDrive(
                 -gamepad1.left_stick_x, // Forward/Back
                 -gamepad1.left_stick_y, // Strafe
-                -gamepad1.right_stick_x, // Turn
-                true // TRUE = Robot Centric
+                -gamepad1.right_stick_x * 0.6, // Turn
+                false // TRUE = Robot Centric
         );
         follower.update();
 
@@ -80,11 +80,11 @@ public class driveTest extends OpMode {
         }
 
         // Flywheel Logic
-        if (gamepad1.right_trigger > 0.1) {
-            flywheel.setPower(1);
-        } else {
-            flywheel.setPower(0);
-        }
+//        if (gamepad1.right_trigger > 0.1) {
+//            flywheel.setPower(1);
+//        } else {
+//            flywheel.setPower(0);
+//        }
 
         // Telemetry
         telemetry.addData("State", "Running");
