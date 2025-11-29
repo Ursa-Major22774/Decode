@@ -18,6 +18,7 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
@@ -26,6 +27,7 @@ public class driveTest extends OpMode {
 
     // Subsystems
     private Intake intake;
+    private Servo gateServo;
 
 //    private DcMotorEx flywheel;
 
@@ -46,6 +48,7 @@ public class driveTest extends OpMode {
 //        flywheel = hardwareMap.get(DcMotorEx.class, "intakeMotor");
 //        flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 //        flywheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        gateServo = hardwareMap.get(Servo.class, "gateServo");
 
         // 3. Initialize PedroPathing
         follower = Constants.createFollower(hardwareMap);
@@ -87,6 +90,7 @@ public class driveTest extends OpMode {
 //        }
 
         // Telemetry
+        telemetry.addData("Servo Postion", gateServo.getPosition());
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
         telemetry.update(); telemetryManager.update();
