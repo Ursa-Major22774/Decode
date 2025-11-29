@@ -28,6 +28,7 @@ public class driveTest extends OpMode {
     // Subsystems
     private Intake intake;
     private Servo gateServo;
+    private double servoPosition = 0;
 
 //    private DcMotorEx flywheel;
 
@@ -74,13 +75,14 @@ public class driveTest extends OpMode {
         );
         follower.update();
 
-        // --- 2. INTAKE LOGIC ---
+        // --- 2. INTAKE LOGIC ---x
         // Left Trigger = Intake
         if (gamepad1.left_trigger > 0.1) {
             intake.intake();
         } else {
             intake.stop();
         }
+        servoPosition = gateServo.getPosition();
 
         // Flywheel Logic
 //        if (gamepad1.right_trigger > 0.1) {
@@ -90,7 +92,7 @@ public class driveTest extends OpMode {
 //        }
 
         // Telemetry
-        telemetry.addData("Servo Postion", gateServo.getPosition());
+        telemetry.addData("Servo Postion", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
         telemetry.update(); telemetryManager.update();
