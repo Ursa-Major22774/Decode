@@ -16,6 +16,10 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @TeleOp(name = "Drive Test", group = "Testing")
@@ -23,6 +27,10 @@ public class driveTest extends OpMode {
 
     // Subsystems
     private Intake intake;
+    private Servo gateServo;
+    private double servoPosition = 0;
+
+//    private DcMotorEx flywheel;
 
     // Pedro Pathing Follower (Handles Drivetrain)
     private Follower follower;
@@ -38,6 +46,10 @@ public class driveTest extends OpMode {
 
         // 2. Initialize Subsystems
         intake = new Intake(hardwareMap);
+//        flywheel = hardwareMap.get(DcMotorEx.class, "intakeMotor");
+//        flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+//        flywheel.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        gateServo = hardwareMap.get(Servo.class, "gateServo");
 
         // 3. Initialize PedroPathing
         follower = Constants.createFollower(hardwareMap);
@@ -56,22 +68,39 @@ public class driveTest extends OpMode {
         // --- 1. DRIVETRAIN (PedroPathing) ---
         // Stick Y is inverted (Up is negative on standard gamepads)
         follower.setTeleOpDrive(
-                -gamepad1.left_stick_x, // Forward/Back
-                -gamepad1.left_stick_y, // Strafe
-                -gamepad1.right_stick_x, // Turn
+                -gamepad1.left_stick_y, // Forward/Back
+                -gamepad1.left_stick_x, // Strafe
+                -gamepad1.right_stick_x * 0.6, // Turn
                 true // TRUE = Robot Centric
         );
         follower.update();
 
-        // --- 2. INTAKE LOGIC ---
+        // --- 2. INTAKE LOGIC ---x
         // Left Trigger = Intake
         if (gamepad1.left_trigger > 0.1) {
             intake.intake();
         } else {
             intake.stop();
         }
+        if (gamepad1.dpad_right) {
+            servoPosition += 0.1;
+        } else if (gamepad1.dpad_left) {
+            servoPosition -= 0.1;
+        }
+        gateServo.setPosition(servoPosition);
+
+        servoPosition = gateServo.getPosition();
+
+        // Flywheel Logic
+//        if (gamepad1.right_trigger > 0.1) {
+//            flywheel.setPower(1);
+//        } else {
+//            flywheel.setPower(0);
+//        }
 
         // Telemetry
+        telemetry.addLine("Use Dpad left and right to adjust gate position");
+        telemetry.addData("Servo Postion", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
         telemetry.update(); telemetryManager.update();

@@ -1,20 +1,22 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.resources.Utilities;
 
+@Configurable
 public class Transfer {
     private DcMotorEx transferMotor;
 
     // HIGH POWER: To lift the ball from intake to gate
-    private final double LIFT_POWER = 1.0;
+    public static double LIFT_POWER = 1.0;
 
     // HOLD POWER: The "Stall" power.
     // DANGER: Must be tuned carefully.
     // Too High = Burn motor. Too Low = Ball falls.
     // Start at 0.1 and work up slowly.
-    private final double HOLD_POWER = 0.15;
+    public static double HOLD_POWER = 0.15;
 
     public Transfer(HardwareMap hardwareMap) {
         transferMotor = hardwareMap.get(DcMotorEx.class, "transferMotor");

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -12,7 +13,7 @@ import org.slf4j.helpers.Util;
 import java.util.Timer;
 import java.util.TimerTask;
 
-
+@Configurable
 public class Turret {
 
     // Hardware
@@ -38,26 +39,35 @@ public class Turret {
     }
 
     // Constants (TUNING REQUIRED)
-    private final double GATE_OPEN = 0.5;
-    private final double GATE_CLOSED = 0.0;
+    public static double GATE_OPEN = 0.5;
+    public static double GATE_CLOSED = 0.0;
+
+    // Velocity PIDF Constants
+    public static double kP = 0.1;
+    public static double kI = 0.0;
+    public static double kD = 0.0;
+    public static double kF = 0.2;
+
 
     // Motor Constants
     // Rev HD Hex Motor = 28 ticks per rev (internal).
     // If you have a gearbox (e.g., 3.7:1), multiply this by gear ratio.
-    private final double TICKS_PER_REV = 28.0;
 
     // Regression Constants for Pitch (y = mx + b)
-    private final double PITCH_M = 0.002;
-    private final double PITCH_B = 0.1;
+    public static double PITCH_M = 0.002;
+    public static double PITCH_B = 0.1;
 
     // Regression Constants for RPM (y = mx + b)
-    private final double RPM_M = 10.5;
-    private final double RPM_B = 1000;
+    public static double RPM_M = 10.5;
+    public static double RPM_B = 1000;
+
+    // Limelight Results
+    LLResult llResult;
 
     // Limelight Mounting math
-    private final double CAMERA_HEIGHT_INCHES = 10.0;
-    private final double TARGET_HEIGHT_INCHES = 25.0; // Height of the bucket/goal
-    private final double CAMERA_MOUNT_ANGLE = 20.0; // Degrees
+    private final double CAMERA_HEIGHT_INCHES = 11.097;
+    private final double TARGET_HEIGHT_INCHES = 41.3386; // Height of the bucket/goal
+    private final double CAMERA_MOUNT_ANGLE = 12.261; // Degrees
 
     // Tracking
     private double targetRPM = 0;
@@ -71,7 +81,7 @@ public class Turret {
 
         // Initialize Velocity PIDF (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
-        flywheelController = new VelocityPIDFController(0.0, 0.0, 0.0, 1.3);
+        flywheelController = new VelocityPIDFController(kP, kI, kD, kF);
 
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
@@ -85,7 +95,6 @@ public class Turret {
      * 4. Set Flywheel RPM.
      */
     public void aimAndReady(String allianceColor) {
-        LLResult llResult = limelight.getLatestResult();
         double tx = 0;
         double ty = 0;
 
@@ -174,6 +183,8 @@ public class Turret {
 
         // Apply voltage compensation
         double safePower = Utilities.voltageCompensate(power, currentVoltage);
+
+        llResult = limelight.getLatestResult();
 
         flywheelMotor.setPower(safePower);
     }
