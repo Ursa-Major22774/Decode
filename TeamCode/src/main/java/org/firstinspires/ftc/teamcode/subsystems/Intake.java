@@ -13,7 +13,7 @@ public class Intake {
     // Reverse Intake Direction
 
     // Constant power. Adjust if it's too fast/slow.
-    public static double INTAKE_POWER = -1.0;
+    public static double INTAKE_POWER = -0.5;
 
     public Intake(HardwareMap hardwareMap) {
         intakeMotor = hardwareMap.get(DcMotorEx.class, "intakeMotor"); //expansion hub 0

@@ -39,8 +39,8 @@ public class Turret {
     }
 
     // Constants (TUNING REQUIRED)
-    public static double GATE_OPEN = 0.5;
-    public static double GATE_CLOSED = 0.0;
+    public static double GATE_OPEN = 0.25;
+    public static double GATE_CLOSED = 0.55;
 
     // Velocity PIDF Constants
     public static double kP = 0.1;
@@ -54,8 +54,8 @@ public class Turret {
     // If you have a gearbox (e.g., 3.7:1), multiply this by gear ratio.
 
     // Regression Constants for Pitch (y = mx + b)
-    public static double PITCH_M = 0.002;
-    public static double PITCH_B = 0.1;
+    public static double PITCH_M = 0.1; //0.002;
+    public static double PITCH_B = 0.5; //0.1;
 
     // Regression Constants for RPM (y = mx + b)
     public static double RPM_M = 10.5;
