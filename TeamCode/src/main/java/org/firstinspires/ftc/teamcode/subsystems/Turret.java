@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.resources.VelocityPIDFController;
@@ -18,7 +20,7 @@ public class Turret {
 
     // Hardware
     private Servo pitchServo;
-    private Servo yawServo;
+    private DcMotorEx yawMotor;
     private Servo gateServo;
     private DcMotorEx flywheelMotor;
     private Limelight3A limelight;
@@ -38,6 +40,10 @@ public class Turret {
         RELOAD            // Gate closing, waiting to go back to IDLE
     }
 
+    // Telemetry Variables
+    public static int currentYaw = 0;
+    public static boolean detectsAprilTag = false;
+
     // Constants (TUNING REQUIRED)
     public static double GATE_OPEN = 0.25;
     public static double GATE_CLOSED = 0.55;
@@ -47,6 +53,12 @@ public class Turret {
     public static double kI = 0.0;
     public static double kD = 0.0;
     public static double kF = 0.2;
+
+    // Limelight Shit
+    public static double tx;
+    public static double ty;
+    public static double yawCorrection;
+    public static double yawMotorPower = 0.5;
 
 
     // Motor Constants
@@ -61,25 +73,25 @@ public class Turret {
     public static double RPM_M = 10.5;
     public static double RPM_B = 1000;
 
-    // Limelight Results
-    LLResult llResult;
+    // Constant for Yaw Motor
+    public static double YAW_M = 0.45;
 
     // Limelight Mounting math
-    private final double CAMERA_HEIGHT_INCHES = 11.097;
+    private final double CAMERA_HEIGHT_INCHES = 11.248661;
     private final double TARGET_HEIGHT_INCHES = 41.3386; // Height of the bucket/goal
-    private final double CAMERA_MOUNT_ANGLE = 12.261; // Degrees
+    private final double CAMERA_MOUNT_ANGLE = 5; // Degrees
 
     // Tracking
     private double targetRPM = 0;
 
     public Turret(HardwareMap hardwareMap) {
         pitchServo = hardwareMap.get(Servo.class, "pitchServo");
-        yawServo = hardwareMap.get(Servo.class, "yawServo");
+        yawMotor = hardwareMap.get(DcMotorEx.class, "yawMotor");
         gateServo = hardwareMap.get(Servo.class, "gateServo");
         flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
-        // Initialize Velocity PIDF (kP, kI, kD, kF)
+        // Initialize Velocity PIDF 5 (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
         flywheelController = new VelocityPIDFController(kP, kI, kD, kF);
 
@@ -94,20 +106,26 @@ public class Turret {
      * 3. Set Servos.
      * 4. Set Flywheel RPM.
      */
-    public void aimAndReady(String allianceColor) {
-        double tx = 0;
-        double ty = 0;
+    public void aimAndReady(boolean isRed) {
+        yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        limelight.start();
+        LLResult llResult = limelight.getLatestResult();
 
         // 1. Get Limelight Data
-        if (allianceColor == "red") {
+        if (isRed) {
             limelight.pipelineSwitch(0);
-        } else if (allianceColor == "blue") {
+        } else if (!isRed) {
             limelight.pipelineSwitch(1);
         }
 
         if (llResult != null && llResult.isValid()) {
             tx = llResult.getTx();
             ty = llResult.getTy();
+            detectsAprilTag = true;
+        } else {
+            detectsAprilTag = false;
+            yawMotor.setTargetPosition(0);
         }
 
         // 2. Calculate Distance
@@ -115,16 +133,17 @@ public class Turret {
         double distance = (TARGET_HEIGHT_INCHES - CAMERA_HEIGHT_INCHES) / Math.tan(angleToGoalRad);
 
         // 3. Set Yaw (Horizontal Aim)
-        double currentYaw = yawServo.getPosition();
-        double yawCorrection = tx * 0.01;
-        yawServo.setPosition(currentYaw + yawCorrection);
+        currentYaw = yawMotor.getCurrentPosition();
+        yawCorrection = YAW_M * tx;
+        yawMotor.setTargetPosition((int) (currentYaw + yawCorrection));
+        yawMotor.setPower(yawMotorPower);
 
         // 4. Set Pitch (Vertical Aim)
-        double newPitch = Utilities.linearPredict(distance, PITCH_M, PITCH_B);
-        pitchServo.setPosition(newPitch);
-
-        // 5. Set Flywheel Speed
-        targetRPM = Utilities.linearPredict(distance, RPM_M, RPM_B);
+//        double newPitch = Utilities.linearPredict(distance, PITCH_M, PITCH_B);
+//        pitchServo.setPosition(newPitch);
+//
+//        // 5. Set Flywheel Speed
+//        targetRPM = Utilities.linearPredict(distance, RPM_M, RPM_B);
     }
 
     public boolean shoot(double currentTime) {
@@ -183,8 +202,6 @@ public class Turret {
 
         // Apply voltage compensation
         double safePower = Utilities.voltageCompensate(power, currentVoltage);
-
-        llResult = limelight.getLatestResult();
 
         flywheelMotor.setPower(safePower);
     }

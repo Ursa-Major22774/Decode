@@ -31,6 +31,7 @@ public class driveTest extends OpMode {
     // Subsystems
     private Intake intake;
     private Transfer transfer;
+    private Turret turret;
 //    private ColorRangeSensor colorSensor;
 
     private Servo gateServo;
@@ -55,6 +56,7 @@ public class driveTest extends OpMode {
         // 2. Initialize Subsystems
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
+        turret = new Turret(hardwareMap);
 //        colorSensor = hardwareMap.get(ColorRangeSensor.class, "topColorSensor");
         flywheel = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
         flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -109,8 +111,17 @@ public class driveTest extends OpMode {
             flywheel.setPower(0);
         }
 
+        if (gamepad1.x) {
+            turret.aimAndReady(true);
+        }
+
         // Telemetry
         telemetry.addLine("Use Dpad left and right to adjust gate position");
+        telemetry.addData("Current Yaw", turret.currentYaw);
+        telemetry.addData("Tx", turret.tx);
+        telemetry.addData("Ty", turret.ty);
+        telemetry.addData("Yaw Correction", turret.yawCorrection);
+        telemetry.addData("Detects April Tag", turret.detectsAprilTag);
         telemetry.addData("Servo Postion", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");

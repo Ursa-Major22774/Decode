@@ -93,7 +93,7 @@ public class RedTeleOp extends OpMode {
         // --- 3. TURRET AIMING ---
         // Button A = Aim/Spin up
         if (gamepad1.a) {
-            turret.aimAndReady("red");
+            turret.aimAndReady(true);
         } else {
             // Idle behavior
             turret.stopFlywheel();
