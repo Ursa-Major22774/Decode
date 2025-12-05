@@ -104,7 +104,7 @@ public class driveTest extends OpMode {
 
         // Flywheel Logic
         if (gamepad1.right_trigger > 0.1) {
-            flywheel.setPower(1);
+            flywheel.setPower(-1);
         } else {
             flywheel.setPower(0);
         }
