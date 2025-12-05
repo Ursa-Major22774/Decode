@@ -15,6 +15,8 @@ import org.slf4j.helpers.Util;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import kotlin.ParameterName;
+
 @Configurable
 public class Turret {
 
@@ -100,12 +102,9 @@ public class Turret {
     }
 
     /**
-     * AIM AND READY
-     * 1. Read Limelight tx/ty.
-     * 2. Calculate Distance.
-     * 3. Set Servos.
-     * 4. Set Flywheel RPM.
+     * @param isRed Set true for red alliance. Set false for blue alliance
      */
+
     public void aimAndReady(boolean isRed) {
         yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -113,11 +112,7 @@ public class Turret {
         LLResult llResult = limelight.getLatestResult();
 
         // 1. Get Limelight Data
-        if (isRed) {
-            limelight.pipelineSwitch(0);
-        } else if (!isRed) {
-            limelight.pipelineSwitch(1);
-        }
+        limelight.pipelineSwitch(isRed ? 0 : 1);
 
         if (llResult != null && llResult.isValid()) {
             tx = llResult.getTx();
@@ -146,6 +141,10 @@ public class Turret {
 //        targetRPM = Utilities.linearPredict(distance, RPM_M, RPM_B);
     }
 
+    /**
+     * @param currentTime
+     * @return
+     */
     public boolean shoot(double currentTime) {
         double currentRPM = Utilities.getRpm(flywheelMotor);
         boolean isFlywheelReady = Math.abs(targetRPM - currentRPM) <= 50;
