@@ -68,6 +68,9 @@ public class driveTest extends OpMode {
         follower.setStartingPose(new Pose(0, 0, 0));
         follower.update();
         telemetryManager = PanelsTelemetry.INSTANCE.getTelemetry();
+
+        // 4. Initialize Turret
+        turret.init();
     }
 
     @Override
@@ -113,6 +116,12 @@ public class driveTest extends OpMode {
 
         if (gamepad1.x) {
             turret.aimAndReady(true);
+        }
+
+        if (gamepad1.y){
+            transfer.kick();
+        }else {
+            transfer.kickButInReverse();
         }
 
         // Telemetry

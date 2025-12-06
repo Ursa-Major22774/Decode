@@ -10,6 +10,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Intake {
     private DcMotorEx intakeMotor;
 
+
+
     // Reverse Intake Direction
 
     // Constant power. Adjust if it's too fast/slow.

@@ -3,11 +3,14 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.Servo;
+
 import org.firstinspires.ftc.teamcode.resources.Utilities;
 
 @Configurable
 public class Transfer {
     private DcMotorEx transferMotor;
+    private Servo kickerServo;
 
     // HIGH POWER: To lift the ball from intake to gate
     public static double LIFT_POWER = -1.0;
@@ -18,9 +21,15 @@ public class Transfer {
     // Start at 0.1 and work up slowly.
     public static double HOLD_POWER = -0.1;
 
+    public static double KICKER_OPEN = 0.25;
+    public static double KICKER_CLOSED = 55;
+
     public Transfer(HardwareMap hardwareMap) {
         transferMotor = hardwareMap.get(DcMotorEx.class, "transferMotor");
         transferMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+
+        kickerServo = hardwareMap.get(Servo.class, "kickerServo");
+        kickerServo.setDirection(Servo.Direction.REVERSE);
     }
 
     /**
@@ -56,5 +65,12 @@ public class Transfer {
 
     public void stop() {
         transferMotor.setPower(0);
+    }
+
+    public void kick() {
+        kickerServo.setPosition(KICKER_OPEN);
+    }
+    public void kickButInReverse(){
+        kickerServo.setPosition(KICKER_CLOSED);
     }
 }

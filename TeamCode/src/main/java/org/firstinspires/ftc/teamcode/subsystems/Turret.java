@@ -84,6 +84,7 @@ public class Turret {
     // Tracking
     private double targetRPM = 0;
 
+
     public Turret(HardwareMap hardwareMap) {
         pitchServo = hardwareMap.get(Servo.class, "pitchServo");
         yawMotor = hardwareMap.get(DcMotorEx.class, "yawMotor");
@@ -91,12 +92,23 @@ public class Turret {
         flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
+
+
         // Initialize Velocity PIDF 5 (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
         flywheelController = new VelocityPIDFController(kP, kI, kD, kF);
 
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
+
+    }
+
+    public void init(){
+        yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        yawMotor.setPower(yawMotorPower);
+
+        limelight.deleteSnapshots();
     }
 
     /**
@@ -107,8 +119,6 @@ public class Turret {
      * 4. Set Flywheel RPM.
      */
     public void aimAndReady(boolean isRed) {
-        yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         limelight.start();
         LLResult llResult = limelight.getLatestResult();
 
@@ -136,7 +146,7 @@ public class Turret {
         currentYaw = yawMotor.getCurrentPosition();
         yawCorrection = YAW_M * tx;
         yawMotor.setTargetPosition((int) (currentYaw + yawCorrection));
-        yawMotor.setPower(yawMotorPower);
+
 
         // 4. Set Pitch (Vertical Aim)
 //        double newPitch = Utilities.linearPredict(distance, PITCH_M, PITCH_B);
