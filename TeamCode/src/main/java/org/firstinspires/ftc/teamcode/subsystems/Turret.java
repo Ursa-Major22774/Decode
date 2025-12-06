@@ -8,14 +8,11 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
+
+import org.firstinspires.ftc.teamcode.resources.PIDFController;
 import org.firstinspires.ftc.teamcode.resources.VelocityPIDFController;
 import org.firstinspires.ftc.teamcode.resources.Utilities;
-import org.slf4j.helpers.Util;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
-import kotlin.ParameterName;
 
 @Configurable
 public class Turret {
@@ -29,6 +26,7 @@ public class Turret {
 
     // Controllers
     private VelocityPIDFController flywheelController;
+    private PIDFController yawController;
 
     // --- TIMING/STATE VARIABLES ---
     private double gateOpenedTime = 0; // Stores the time (in seconds) the gate was opened
@@ -51,16 +49,23 @@ public class Turret {
     public static double GATE_CLOSED = 0.55;
 
     // Velocity PIDF Constants
-    public static double kP = 0.1;
+    public static double vkP = 0.01;
+    public static double vkI = 0.0;
+    public static double vkD = 0.0;
+    public static double vkF = 0.01;
+
+    // Yaw PIDF Constants
+    public static double kP = 0.3;
     public static double kI = 0.0;
     public static double kD = 0.0;
-    public static double kF = 0.2;
+    public static double kF = 0.01;
 
     // Limelight Shit
     public static double tx;
     public static double ty;
     public static double yawCorrection;
     public static double yawMotorPower = 0.5;
+    public static double rawDistance = 0;
 
 
     // Motor Constants
@@ -68,15 +73,15 @@ public class Turret {
     // If you have a gearbox (e.g., 3.7:1), multiply this by gear ratio.
 
     // Regression Constants for Pitch (y = mx + b)
-    public static double PITCH_M = 0.1; //0.002;
-    public static double PITCH_B = 0.5; //0.1;
+    public static double PITCH_M = -0.1;  public static double PITCH_B = 0.1;
 
     // Regression Constants for RPM (y = mx + b)
-    public static double RPM_M = 10.5;
-    public static double RPM_B = 1000;
+    public static double RPM_M = -3.7;
+    public static double RPM_B = 0;
 
     // Constant for Yaw Motor
     public static double YAW_M = 0.45;
+    public static double SMOOTHING_ALPHA = 0.1;
 
     // Limelight Mounting math
     private final double CAMERA_HEIGHT_INCHES = 11.248661;
@@ -84,7 +89,10 @@ public class Turret {
     private final double CAMERA_MOUNT_ANGLE = 5; // Degrees
 
     // Tracking
-    private double targetRPM = 0;
+    public double targetRPM = 0;
+    public double yawPowerPid = 0;
+    public static double smoothedDistance = 0;
+    public static double pitchCorrection = 0;
 
 
     public Turret(HardwareMap hardwareMap) {
@@ -94,11 +102,10 @@ public class Turret {
         flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
-
-
         // Initialize Velocity PIDF 5 (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
-        flywheelController = new VelocityPIDFController(kP, kI, kD, kF);
+        flywheelController = new VelocityPIDFController(vkP, vkI, vkD, vkF);
+        yawController = new PIDFController(kP, kI, kD, kF);
 
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
@@ -106,9 +113,13 @@ public class Turret {
     }
 
     public void init(){
+        yawMotor.setTargetPosition(0);
         yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
         yawMotor.setPower(yawMotorPower);
+//        yawMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         limelight.deleteSnapshots();
     }
@@ -116,7 +127,6 @@ public class Turret {
     /**
      * @param isRed Set true for red alliance. Set false for blue alliance
      */
-
     public void aimAndReady(boolean isRed) {
         limelight.start();
         LLResult llResult = limelight.getLatestResult();
@@ -128,27 +138,37 @@ public class Turret {
             tx = llResult.getTx();
             ty = llResult.getTy();
             detectsAprilTag = true;
+
+            // 2. Calculate Distance
+            double angleToGoalRad = Math.toRadians(CAMERA_MOUNT_ANGLE + ty);
+            rawDistance = -(TARGET_HEIGHT_INCHES - CAMERA_HEIGHT_INCHES) / Math.tan(angleToGoalRad);
+
+            if (smoothedDistance == 0){
+                smoothedDistance = rawDistance;
+            } else {
+                smoothedDistance = Utilities.lowPassFilter(rawDistance, smoothedDistance, SMOOTHING_ALPHA);
+            }
+
+            targetRPM = Utilities.linearPredict(smoothedDistance, RPM_M, RPM_B);
         } else {
             detectsAprilTag = false;
-            yawMotor.setTargetPosition(0);
+            idle();
         }
 
-        // 2. Calculate Distance
-        double angleToGoalRad = Math.toRadians(CAMERA_MOUNT_ANGLE + ty);
-        double distance = (TARGET_HEIGHT_INCHES - CAMERA_HEIGHT_INCHES) / Math.tan(angleToGoalRad);
 
         // 3. Set Yaw (Horizontal Aim)
         currentYaw = yawMotor.getCurrentPosition();
         yawCorrection = YAW_M * tx;
         yawMotor.setTargetPosition((int) (currentYaw + yawCorrection));
+        yawMotor.setPower(yawMotorPower);
 
 
         // 4. Set Pitch (Vertical Aim)
-//        double newPitch = Utilities.linearPredict(distance, PITCH_M, PITCH_B);
-//        pitchServo.setPosition(newPitch);
+        pitchCorrection = Utilities.linearPredict(smoothedDistance, PITCH_M, PITCH_B);;
+        pitchServo.setPosition(0);
 //
 //        // 5. Set Flywheel Speed
-//        targetRPM = Utilities.linearPredict(distance, RPM_M, RPM_B);
+
     }
 
     /**
@@ -205,14 +225,22 @@ public class Turret {
 
         // Convert Target RPM to Target Ticks-Per-Second
         double targetTPS = Utilities.rpmToTicksPerSec(targetRPM);
+//
+//        // Calculate power needed
+        double fwTPSPower = flywheelController.calculate(targetTPS, currentTicks);
+//        double fwLinearPredictPower = flywheelController.calculate(Utilities.linearPredict(rawDistance, RPM_M, RPM_B), currentTicks);
 
-        // Calculate power needed
-        double power = flywheelController.calculate(targetTPS, currentTicks);
+//        // Apply voltage compensation
+        double fwSafePower = Utilities.voltageCompensate(fwTPSPower, currentVoltage);
 
-        // Apply voltage compensation
-        double safePower = Utilities.voltageCompensate(power, currentVoltage);
+        flywheelMotor.setVelocity(targetTPS);
+        yawPowerPid = yawController.calculate(yawCorrection, yawMotor.getCurrentPosition());
+        yawMotor.setPower(yawPowerPid);
+    }
 
-        flywheelMotor.setPower(safePower);
+    public void idle () {
+        limelight.stop();
+        stopFlywheel();
     }
 
     public void openGate() {
@@ -226,5 +254,7 @@ public class Turret {
     public void stopFlywheel() {
         targetRPM = 0;
         flywheelController.reset(); // Reset integral/prev values when stopping
+        flywheelMotor.setPower(0.0);
     }
+    public double getFlywheelPower () {return flywheelMotor.getPower();}
 }

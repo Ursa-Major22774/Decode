@@ -86,6 +86,10 @@ public class Utilities {
         return degrees;
     }
 
+    public static double lowPassFilter (double currentReading, double previousEstimate, double alpha) {
+        return (alpha*currentReading) + ((1.0 - alpha) * previousEstimate);
+    }
+
     public static double rpmToTicksPerSec(double rpm) {
         // RPM / 60 = Revolutions Per Second
         // RPS * TicksPerRev = Ticks Per Second

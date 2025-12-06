@@ -1,8 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
-import static org.firstinspires.ftc.teamcode.resources.Utilities.getBatteryVoltage;
-
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -17,27 +14,16 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.qualcomm.robotcore.hardware.ColorRangeSensor;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Configurable
-@TeleOp(name = "Drive Test", group = "Testing")
-public class driveTest extends OpMode {
+@TeleOp(name = "Drive Test (Blue)", group = "LM1 OpModes")
+public class driveTestBlue extends OpMode {
 
     // Subsystems
     private Intake intake;
     private Transfer transfer;
     private Turret turret;
-//    private ColorRangeSensor colorSensor;
-
-    private Servo gateServo;
-    private double servoPosition = 0;
-
-    private DcMotorEx flywheel;
 
     // Pedro Pathing Follower (Handles Drivetrain)
     private Follower follower;
@@ -57,10 +43,6 @@ public class driveTest extends OpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         turret = new Turret(hardwareMap);
-//        colorSensor = hardwareMap.get(ColorRangeSensor.class, "topColorSensor");
-        flywheel = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
-        flywheel.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        gateServo = hardwareMap.get(Servo.class, "gateServo");
 //        gateServo.setDirection(Servo.Direction.REVERSE);
 
         // 3. Initialize PedroPathing
@@ -76,7 +58,6 @@ public class driveTest extends OpMode {
     @Override
     public void start() {
         follower.startTeleOpDrive();
-        gateServo.setPosition(0);
     }
 
     @Override
@@ -100,29 +81,34 @@ public class driveTest extends OpMode {
             intake.stop();
             transfer.stop();
         }
-        if (gamepad1.b) {
-            gateServo.setPosition(servoClosedPosition);
-        } else if (gamepad1.a) {
-            gateServo.setPosition(servoOpenPosition);
-        }
-        servoPosition = gateServo.getPosition();
 
         // Flywheel Logic
-        if (gamepad1.right_trigger > 0.1) {
-            flywheel.setPower(-1);
+//        if (gamepad1.right_trigger > 0.1) {
+//
+//        } else {
+//
+//        }
+
+        if (gamepad1.a) {
+            turret.aimAndReady(false);
+            turret.update(Utilities.getBatteryVoltage(hardwareMap));
         } else {
-            flywheel.setPower(0);
+            turret.idle();
         }
 
-        if (gamepad1.x) {
-            turret.aimAndReady(true);
-        }
-
-        if (gamepad1.y){
+        if (gamepad1.right_trigger > 0.1) {
             transfer.kick();
-        }else {
-            transfer.kickButInReverse();
+        } else {
+            transfer.resetKick();
         }
+
+        //turret.update(Utilities.getBatteryVoltage(hardwareMap));
+
+//        if (gamepad1.y){
+//            transfer.kick();
+//        } else {
+//            transfer.resetKick();
+//        }
 
         // Telemetry
         telemetry.addLine("Use Dpad left and right to adjust gate position");
@@ -131,7 +117,12 @@ public class driveTest extends OpMode {
         telemetry.addData("Ty", turret.ty);
         telemetry.addData("Yaw Correction", turret.yawCorrection);
         telemetry.addData("Detects April Tag", turret.detectsAprilTag);
-        telemetry.addData("Servo Postion", servoPosition);
+        telemetry.addData("Distance From Target", turret.rawDistance);
+        telemetry.addData("Target RPM", turret.targetRPM);
+        telemetry.addData("Motor Power", turret.getFlywheelPower());
+//        telemetry.addData("Pitch", turret.pitchCorrection);
+        telemetry.addData("Yaw Power Pid", turret.yawPowerPid);
+//        telemetry.addData("Servo Position", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
         telemetry.update(); telemetryManager.update();
