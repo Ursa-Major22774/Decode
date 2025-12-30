@@ -79,7 +79,7 @@ public class RedTeleOp extends OpMode {
             intake.stop();
 
             // Run Shoot Sequence
-            turret.shoot(getRuntime());
+//            turret.shoot(getRuntime());
         }
         // Default State: Hold the ball
         else {

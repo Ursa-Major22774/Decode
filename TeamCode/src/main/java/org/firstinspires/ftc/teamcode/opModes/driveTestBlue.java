@@ -31,9 +31,6 @@ public class driveTestBlue extends OpMode {
     // Telemetry Manager
     private TelemetryManager telemetryManager;
 
-    public static double servoOpenPosition = 0.25;
-    public static double servoClosedPosition = 0.55;
-
     @Override
     public void init() {
         // 1. Optimize Hardware Reads
@@ -65,14 +62,14 @@ public class driveTestBlue extends OpMode {
         // --- 1. DRIVETRAIN (PedroPathing) ---4
         // Stick Y is inverted (Up is negative on standard gamepads)
         follower.setTeleOpDrive(
-                -gamepad1.left_stick_y, // Forward/Back
-                -gamepad1.left_stick_x, // Strafe
+                -gamepad1.left_stick_x, // Forward/Back
+                gamepad1.left_stick_y, // Strafe
                 -gamepad1.right_stick_x * 0.6, // Turn
                 true // TRUE = Robot Centric
         );
         follower.update();
 
-        // --- 2. INTAKE LOGIC ---x
+        // --- 2. INTAKE LOGIC ---
         // Left Trigger = Intake
         if (gamepad1.left_trigger > 0.1) {
             intake.intake();
@@ -82,13 +79,6 @@ public class driveTestBlue extends OpMode {
             transfer.stop();
         }
 
-        // Flywheel Logic
-//        if (gamepad1.right_trigger > 0.1) {
-//
-//        } else {
-//
-//        }
-
         if (gamepad1.a) {
             turret.aimAndReady(false);
             turret.update(Utilities.getBatteryVoltage(hardwareMap));
@@ -97,32 +87,27 @@ public class driveTestBlue extends OpMode {
         }
 
         if (gamepad1.right_trigger > 0.1) {
+
             transfer.kick();
         } else {
             transfer.resetKick();
         }
 
-        //turret.update(Utilities.getBatteryVoltage(hardwareMap));
-
-//        if (gamepad1.y){
-//            transfer.kick();
-//        } else {
-//            transfer.resetKick();
-//        }
-
         // Telemetry
-        telemetry.addLine("Use Dpad left and right to adjust gate position");
-        telemetry.addData("Current Yaw", turret.currentYaw);
+        telemetry.addLine("Limelight Data");
         telemetry.addData("Tx", turret.tx);
         telemetry.addData("Ty", turret.ty);
         telemetry.addData("Yaw Correction", turret.yawCorrection);
         telemetry.addData("Detects April Tag", turret.detectsAprilTag);
-        telemetry.addData("Distance From Target", turret.rawDistance);
+        telemetry.addData("Distance From Target", turret.smoothedDistance);
+
+        telemetry.addLine("Turret Positioning");
+        telemetry.addData("Current Yaw", turret.currentYaw);
         telemetry.addData("Target RPM", turret.targetRPM);
         telemetry.addData("Motor Power", turret.getFlywheelPower());
-//        telemetry.addData("Pitch", turret.pitchCorrection);
-        telemetry.addData("Yaw Power Pid", turret.yawPowerPid);
-//        telemetry.addData("Servo Position", servoPosition);
+        telemetry.addData("Pitch", turret.pitchCorrection);
+
+        telemetry.addLine("Miscellaneous");
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
         telemetry.update(); telemetryManager.update();

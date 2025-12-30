@@ -28,17 +28,6 @@ public class Turret {
     private VelocityPIDFController flywheelController;
     private PIDFController yawController;
 
-    // --- TIMING/STATE VARIABLES ---
-    private double gateOpenedTime = 0; // Stores the time (in seconds) the gate was opened
-    private ShootingState currentShootingState = ShootingState.IDLE;
-    private final double SHOOT_DELAY_SECONDS = 0.5; // 500 ms delay
-
-    public enum ShootingState {
-        IDLE,             // Ready to spin up
-        SPINNING_UP,      // Waiting for flywheel to hit target RPM
-        FEEDING,          // Gate is open, transferring balls
-        RELOAD            // Gate closing, waiting to go back to IDLE
-    }
 
     // Telemetry Variables
     public static int currentYaw = 0;
@@ -47,18 +36,6 @@ public class Turret {
     // Constants (TUNING REQUIRED)
     public static double GATE_OPEN = 0.25;
     public static double GATE_CLOSED = 0.55;
-
-    // Velocity PIDF Constants
-    public static double vkP = 0.01;
-    public static double vkI = 0.0;
-    public static double vkD = 0.0;
-    public static double vkF = 0.01;
-
-    // Yaw PIDF Constants
-    public static double kP = 0.3;
-    public static double kI = 0.0;
-    public static double kD = 0.0;
-    public static double kF = 0.01;
 
     // Limelight Shit
     public static double tx;
@@ -76,7 +53,7 @@ public class Turret {
     public static double PITCH_M = -0.1;  public static double PITCH_B = 0.1;
 
     // Regression Constants for RPM (y = mx + b)
-    public static double RPM_M = -3.7;
+    public static double RPM_M = -4.0;
     public static double RPM_B = 0;
 
     // Constant for Yaw Motor
@@ -104,8 +81,8 @@ public class Turret {
 
         // Initialize Velocity PIDF 5 (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
-        flywheelController = new VelocityPIDFController(vkP, vkI, vkD, vkF);
-        yawController = new PIDFController(kP, kI, kD, kF);
+        flywheelController = new VelocityPIDFController(0.01, 0, 0, 0.01);
+        yawController = new PIDFController(0.3, 0.0, 0.0, 0.01);
 
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
@@ -164,55 +141,10 @@ public class Turret {
 
 
         // 4. Set Pitch (Vertical Aim)
-        pitchCorrection = Utilities.linearPredict(smoothedDistance, PITCH_M, PITCH_B);;
-        pitchServo.setPosition(0);
-//
-//        // 5. Set Flywheel Speed
+//        pitchCorrection = Utilities.linearPredict(smoothedDistance, PITCH_M, PITCH_B);
+        pitchServo.setPosition(0.3);
+        flywheelMotor.setPower(flywheelController.calculate(-50, flywheelMotor.getCurrentPosition()));
 
-    }
-
-    /**
-     * @param currentTime
-     * @return
-     */
-    public boolean shoot(double currentTime) {
-        double currentRPM = Utilities.getRpm(flywheelMotor);
-        boolean isFlywheelReady = Math.abs(targetRPM - currentRPM) <= 50;
-
-        switch (currentShootingState) {
-            case IDLE:
-            case SPINNING_UP:
-                // We stay in SPINNING_UP until the flywheel is ready
-                if (isFlywheelReady && targetRPM > 0) {
-                    // Transition to feeding (open gate)
-                    currentShootingState = ShootingState.FEEDING;
-                    openGate();
-                    gateOpenedTime = currentTime; // Start the 500ms timer
-                }
-                break;
-
-            case FEEDING:
-                // Check if 500ms has elapsed since the gate opened
-                if (currentTime >= gateOpenedTime + SHOOT_DELAY_SECONDS) {
-                    closeGate();
-                    currentShootingState = ShootingState.RELOAD;
-                }
-                break;
-
-            case RELOAD:
-                // Give a moment for the servo to finish closing, then stop flywheel
-                // Note: We don't really need a second delay here, but we could add one.
-                currentShootingState = ShootingState.IDLE;
-                stopFlywheel(); // Reset target RPM to 0
-                return false; // Sequence finished
-
-            default:
-                // Should not happen
-                currentShootingState = ShootingState.IDLE;
-                break;
-        }
-
-        return currentShootingState != ShootingState.IDLE;
     }
 
     /**
@@ -225,15 +157,8 @@ public class Turret {
 
         // Convert Target RPM to Target Ticks-Per-Second
         double targetTPS = Utilities.rpmToTicksPerSec(targetRPM);
-//
-//        // Calculate power needed
-        double fwTPSPower = flywheelController.calculate(targetTPS, currentTicks);
-//        double fwLinearPredictPower = flywheelController.calculate(Utilities.linearPredict(rawDistance, RPM_M, RPM_B), currentTicks);
 
-//        // Apply voltage compensation
-        double fwSafePower = Utilities.voltageCompensate(fwTPSPower, currentVoltage);
 
-        flywheelMotor.setVelocity(targetTPS);
         yawPowerPid = yawController.calculate(yawCorrection, yawMotor.getCurrentPosition());
         yawMotor.setPower(yawPowerPid);
     }
