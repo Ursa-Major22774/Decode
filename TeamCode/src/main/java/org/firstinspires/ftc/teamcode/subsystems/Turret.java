@@ -81,7 +81,7 @@ public class Turret {
 
         // Initialize Velocity PIDF 5 (kP, kI, kD, kF)
         // Tune kF first! It does 90% of the work.
-        flywheelController = new VelocityPIDFController(0.01, 0, 0, 0.01);
+        flywheelController = new VelocityPIDFController(0.3, 0, 0, 0.01);
         yawController = new PIDFController(0.3, 0.0, 0.0, 0.01);
 
         // Start closed
@@ -112,7 +112,7 @@ public class Turret {
         limelight.pipelineSwitch(isRed ? 0 : 1);
 
         if (llResult != null && llResult.isValid()) {
-            tx = llResult.getTx();
+            tx = (tx == 0 ? llResult.getTx() : Utilities.lowPassFilter(llResult.getTx(), tx, 0.1));
             ty = llResult.getTy();
             detectsAprilTag = true;
 
@@ -120,11 +120,7 @@ public class Turret {
             double angleToGoalRad = Math.toRadians(CAMERA_MOUNT_ANGLE + ty);
             rawDistance = -(TARGET_HEIGHT_INCHES - CAMERA_HEIGHT_INCHES) / Math.tan(angleToGoalRad);
 
-            if (smoothedDistance == 0){
-                smoothedDistance = rawDistance;
-            } else {
-                smoothedDistance = Utilities.lowPassFilter(rawDistance, smoothedDistance, SMOOTHING_ALPHA);
-            }
+            smoothedDistance = (smoothedDistance == 0 ? rawDistance : Utilities.lowPassFilter(rawDistance, smoothedDistance, SMOOTHING_ALPHA));
 
             targetRPM = Utilities.linearPredict(smoothedDistance, RPM_M, RPM_B);
         } else {
