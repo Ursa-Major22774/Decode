@@ -21,8 +21,8 @@ public class Transfer {
     // Start at 0.1 and work up slowly.
     public static double HOLD_POWER = -0.1;
 
-    public static double KICK_POSITION = 0.15;
-    public static double RESET_POSITION = 1;
+    public static double KICK_POSITION = -0.1;
+    public static double RESET_POSITION = 0.65;
 
     public Transfer(HardwareMap hardwareMap) {
         transferMotor = hardwareMap.get(DcMotorEx.class, "transferMotor");
