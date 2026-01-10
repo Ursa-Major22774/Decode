@@ -10,7 +10,7 @@ import org.firstinspires.ftc.teamcode.resources.Utilities;
 @Configurable
 public class Transfer {
     private DcMotorEx transferMotor;
-    private Servo kickerServo;
+
 
     // HIGH POWER: To lift the ball from intake to gate
     public static double LIFT_POWER = -1.0;
@@ -21,15 +21,13 @@ public class Transfer {
     // Start at 0.1 and work up slowly.
     public static double HOLD_POWER = -0.1;
 
-    public static double KICK_POSITION = -0.1;
-    public static double RESET_POSITION = 0.65;
+
 
     public Transfer(HardwareMap hardwareMap) {
         transferMotor = hardwareMap.get(DcMotorEx.class, "transferMotor");
         transferMotor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
 
-        kickerServo = hardwareMap.get(Servo.class, "kickerServo");
-        kickerServo.setDirection(Servo.Direction.REVERSE);
+
     }
 
     /**
@@ -67,10 +65,5 @@ public class Transfer {
         transferMotor.setPower(0);
     }
 
-    public void kick() {
-        kickerServo.setPosition(KICK_POSITION);
-    }
-    public void resetKick(){
-        kickerServo.setPosition(RESET_POSITION);
-    }
+
 }

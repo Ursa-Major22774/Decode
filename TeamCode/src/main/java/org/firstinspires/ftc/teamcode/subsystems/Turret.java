@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
@@ -12,6 +14,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.resources.PIDFController;
 import org.firstinspires.ftc.teamcode.resources.VelocityPIDFController;
 import org.firstinspires.ftc.teamcode.resources.Utilities;
+import org.firstinspires.ftc.teamcode.subsystems.LookUpTables;
 
 
 @Configurable
@@ -21,6 +24,7 @@ public class Turret {
     private Servo pitchServo;
     private DcMotorEx yawMotor;
     private Servo gateServo;
+    private Servo kickerServo;
     private DcMotorEx flywheelMotor;
     private Limelight3A limelight;
 
@@ -34,15 +38,15 @@ public class Turret {
     public static boolean detectsAprilTag = false;
 
     // Constants (TUNING REQUIRED)
-    public static double GATE_OPEN = 0.25;
-    public static double GATE_CLOSED = 0.55;
+    public static double GATE_OPEN = 0.35;
+    public static double GATE_CLOSED = 0.65;
 
     // Limelight Shit
     public static double tx;
     public static double ty;
     public static double yawCorrection;
     public static double yawMotorPower = 0.5;
-    public static double rawDistance = 0;
+    public static double rawDistance = 65.5;
 
 
     // Motor Constants
@@ -68,14 +72,24 @@ public class Turret {
     // Tracking
     public double targetRPM = 0;
     public double yawPowerPid = 0;
-    public static double smoothedDistance = 0;
+    public static double smoothedDistance = 65;
     public static double pitchCorrection = 0;
+
+    private HardwareMap hMap;
+    private LookUpTables ballistics;
+
+    public static double KICK_POSITION = -0.1;
+    public static double KICK_RESET_POSITION = 0.65;
 
 
     public Turret(HardwareMap hardwareMap) {
+        hMap = hardwareMap;
+
         pitchServo = hardwareMap.get(Servo.class, "pitchServo");
         yawMotor = hardwareMap.get(DcMotorEx.class, "yawMotor");
         gateServo = hardwareMap.get(Servo.class, "gateServo");
+        kickerServo = hardwareMap.get(Servo.class, "kickerServo");
+        kickerServo.setDirection(Servo.Direction.REVERSE);
         flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
@@ -87,13 +101,15 @@ public class Turret {
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
 
+        ballistics = new LookUpTables();
+
     }
 
     public void init(){
         yawMotor.setTargetPosition(0);
         yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        yawMotor.setPower(yawMotorPower);
+//        yawMotor.setPower(yawMotorPower);
 //        yawMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -138,11 +154,18 @@ public class Turret {
 
         // 4. Set Pitch (Vertical Aim)
 //        pitchCorrection = Utilities.linearPredict(smoothedDistance, PITCH_M, PITCH_B);
-        pitchServo.setPosition(0.3);
-        flywheelMotor.setPower(flywheelController.calculate(-50, flywheelMotor.getCurrentPosition()));
+        pitchServo.setPosition(0.15);
+//        pitchServo.setPosition(ballistics.calculatePitch(smoothedDistance));
+//        pitchServo.setPosition();
+        // -3.1 is max
+        flywheelMotor.setPower(Utilities.voltageCompensate(flywheelController.calculate(ballistics.calculateFlywheelSpeed(smoothedDistance), flywheelMotor.getCurrentPosition()), Utilities.getBatteryVoltage(hMap)));
+//        flywheelMotor.setPower(ballistics.calculateFlywheelSpeed(smoothedDistance));
 
     }
-
+    public void shoot () {
+        openGate();
+        kick();
+    }
     /**
      * UPDATE LOOP
      * Must be called every cycle to keep the flywheel PID running.
@@ -170,6 +193,13 @@ public class Turret {
 
     public void closeGate() {
         gateServo.setPosition(GATE_CLOSED);
+    }
+
+    public void kick() {
+        kickerServo.setPosition(KICK_POSITION);
+    }
+    public void resetKick(){
+        kickerServo.setPosition(KICK_RESET_POSITION);
     }
 
     public void stopFlywheel() {

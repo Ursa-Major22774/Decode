@@ -17,7 +17,7 @@ import com.bylazar.telemetry.TelemetryManager;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Configurable
-@TeleOp(name = "Drive Test (Blue)", group = "LM1 OpModes")
+@TeleOp(name = "Drive Test (Blue)", group = "Competition OpModes")
 public class driveTestBlue extends OpMode {
 
     // Subsystems
@@ -69,7 +69,7 @@ public class driveTestBlue extends OpMode {
         );
         follower.update();
 
-        // --- 2. INTAKE LOGIC ---
+        // --- 2. INTAKE LOGIC ---x
         // Left Trigger = Intake
         if (gamepad1.left_trigger > 0.1) {
             intake.intake();
@@ -87,27 +87,32 @@ public class driveTestBlue extends OpMode {
         }
 
         if (gamepad1.right_trigger > 0.1) {
-
-            transfer.kick();
+            turret.shoot();
         } else {
-            transfer.resetKick();
+            turret.resetKick();
+            turret.closeGate();
         }
 
+        //turret.update(Utilities.getBatteryVoltage(hardwareMap));
+
+//        if (gamepad1.y){
+//            transfer.kick();
+//        } else {
+//            transfer.resetKick();
+//        }
+
         // Telemetry
-        telemetry.addLine("Limelight Data");
+        telemetry.addLine("Use Dpad left and right to adjust gate position");
+        telemetry.addData("Current Yaw", turret.currentYaw);
         telemetry.addData("Tx", turret.tx);
         telemetry.addData("Ty", turret.ty);
         telemetry.addData("Yaw Correction", turret.yawCorrection);
         telemetry.addData("Detects April Tag", turret.detectsAprilTag);
-        telemetry.addData("Distance From Target", turret.smoothedDistance);
-
-        telemetry.addLine("Turret Positioning");
-        telemetry.addData("Current Yaw", turret.currentYaw);
+        telemetry.addData("Distance From Target", turret.rawDistance);
         telemetry.addData("Target RPM", turret.targetRPM);
         telemetry.addData("Motor Power", turret.getFlywheelPower());
-        telemetry.addData("Pitch", turret.pitchCorrection);
-
-        telemetry.addLine("Miscellaneous");
+        telemetry.addData("Yaw Power Pid", turret.yawPowerPid);
+//        telemetry.addData("Servo Position", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");
         telemetry.update(); telemetryManager.update();

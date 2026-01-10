@@ -17,7 +17,7 @@ import com.bylazar.telemetry.TelemetryManager;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 @Configurable
-@TeleOp(name = "Drive Test (Red)", group = "LM1 OpModes")
+@TeleOp(name = "Drive Test (Red)", group = "Competition OpModes")
 public class driveTestRed extends OpMode {
 
     // Subsystems
@@ -30,9 +30,6 @@ public class driveTestRed extends OpMode {
 
     // Telemetry Manager
     private TelemetryManager telemetryManager;
-
-    public static double servoOpenPosition = 0.25;
-    public static double servoClosedPosition = 0.55;
 
     @Override
     public void init() {
@@ -82,13 +79,6 @@ public class driveTestRed extends OpMode {
             transfer.stop();
         }
 
-        // Flywheel Logic
-//        if (gamepad1.right_trigger > 0.1) {
-//
-//        } else {
-//
-//        }
-
         if (gamepad1.a) {
             turret.aimAndReady(true);
             turret.update(Utilities.getBatteryVoltage(hardwareMap));
@@ -97,9 +87,10 @@ public class driveTestRed extends OpMode {
         }
 
         if (gamepad1.right_trigger > 0.1) {
-            transfer.kick();
+            turret.shoot();
         } else {
-            transfer.resetKick();
+            turret.resetKick();
+            turret.closeGate();
         }
 
         //turret.update(Utilities.getBatteryVoltage(hardwareMap));
