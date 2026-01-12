@@ -1,219 +1,175 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.hardwareMap;
-
-import com.bylazar.configurables.annotations.Configurable;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.arcrobotics.ftclib.controller.PIDFController;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 
-import org.firstinspires.ftc.teamcode.resources.PIDFController;
-import org.firstinspires.ftc.teamcode.resources.VelocityPIDFController;
-import org.firstinspires.ftc.teamcode.resources.Utilities;
-import org.firstinspires.ftc.teamcode.subsystems.LookUpTables;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-
-@Configurable
+/**
+ * TurretSubsystem handles the rotation of the turret using a single DcMotorEx.
+ * It uses a Limelight 3A for AprilTag tracking and PID control for positioning.
+ */
 public class Turret {
 
-    // Hardware
-    private Servo pitchServo;
+    // --- Follower for atan2 ---
+    private Follower follower;
+
+    // --- Hardware Objects ---
     private DcMotorEx yawMotor;
-    private Servo gateServo;
-    private Servo kickerServo;
-    private DcMotorEx flywheelMotor;
     private Limelight3A limelight;
 
-    // Controllers
-    private VelocityPIDFController flywheelController;
-    private PIDFController yawController;
+    // --- PID Controllers ---
+    // One for aiming at a target (based on degrees/tx)
+    // One for resetting to zero (based on encoder ticks)
+    private PIDFController visionPID;
+    private PIDFController positionPID;
 
+    // --- Tunable Constants (Set to 0.0 for initial tuning) ---
+    public static double VISION_P = 0.0;
+    public static double VISION_I = 0.0;
+    public static double VISION_D = 0.0;
+    public static double VISION_F = 0.0;
 
-    // Telemetry Variables
-    public static int currentYaw = 0;
-    public static boolean detectsAprilTag = false;
+    public static double POS_P = 0.0;
+    public static double POS_I = 0.0;
+    public static double POS_D = 0.0;
+    public static double POS_F = 0.0;
 
-    // Constants (TUNING REQUIRED)
-    public static double GATE_OPEN = 0.35;
-    public static double GATE_CLOSED = 0.65;
+    /** Conversion factor: how many encoder ticks are in one degree of turret rotation */
+    public static double TICKS_PER_DEGREE = 0.0;
 
-    // Limelight Shit
-    public static double tx;
-    public static double ty;
-    public static double yawCorrection;
-    public static double yawMotorPower = 0.5;
-    public static double rawDistance = 65.5;
+    // --- Soft Limits (Degrees) ---
+    private final double LEFT_LIMIT_DEG = -90.0;
+    private final double RIGHT_LIMIT_DEG = 75.0;
 
+    private double currentPos;
 
-    // Motor Constants
-    // Rev HD Hex Motor = 28 ticks per rev (internal).
-    // If you have a gearbox (e.g., 3.7:1), multiply this by gear ratio.
-
-    // Regression Constants for Pitch (y = mx + b)
-    public static double PITCH_M = -0.1;  public static double PITCH_B = 0.1;
-
-    // Regression Constants for RPM (y = mx + b)
-    public static double RPM_M = -4.0;
-    public static double RPM_B = 0;
-
-    // Constant for Yaw Motor
-    public static double YAW_M = 0.45;
-    public static double SMOOTHING_ALPHA = 0.1;
-
-    // Limelight Mounting math
-    private final double CAMERA_HEIGHT_INCHES = 11.248661;
-    private final double TARGET_HEIGHT_INCHES = 41.3386; // Height of the bucket/goal
-    private final double CAMERA_MOUNT_ANGLE = 5; // Degrees
-
-    // Tracking
-    public double targetRPM = 0;
-    public double yawPowerPid = 0;
-    public static double smoothedDistance = 65;
-    public static double pitchCorrection = 0;
-
-    private HardwareMap hMap;
-    private LookUpTables ballistics;
-
-    public static double KICK_POSITION = -0.1;
-    public static double KICK_RESET_POSITION = 0.65;
-
-
-    public Turret(HardwareMap hardwareMap) {
-        hMap = hardwareMap;
-
-        pitchServo = hardwareMap.get(Servo.class, "pitchServo");
+    /**
+     * Constructor for the TurretSubsystem.
+     * @param hardwareMap The hardware map from the OpMode.
+     * @param follower PedroPathing follower as fallback auto aim.
+     */
+    public Turret(HardwareMap hardwareMap, Follower follower) {
+        // Initialize Motor
         yawMotor = hardwareMap.get(DcMotorEx.class, "yawMotor");
-        gateServo = hardwareMap.get(Servo.class, "gateServo");
-        kickerServo = hardwareMap.get(Servo.class, "kickerServo");
-        kickerServo.setDirection(Servo.Direction.REVERSE);
-        flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheelMotor");
+        yawMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        yawMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Initialize Limelight
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
-        // Initialize Velocity PIDF 5 (kP, kI, kD, kF)
-        // Tune kF first! It does 90% of the work.
-        flywheelController = new VelocityPIDFController(0.3, 0, 0, 0.01);
-        yawController = new PIDFController(0.3, 0.0, 0.0, 0.01);
-
-        // Start closed
-        gateServo.setPosition(GATE_CLOSED);
-
-        ballistics = new LookUpTables(hardwareMap);
-
-    }
-
-    public void init(){
-        yawMotor.setTargetPosition(0);
-        yawMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        yawMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-//        yawMotor.setPower(yawMotorPower);
-//        yawMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-        flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        limelight.deleteSnapshots();
-        resetLuts();
+        // Initialize PID Controllers
+        visionPID = new PIDFController(VISION_P, VISION_I, VISION_D, VISION_F);
+        positionPID = new PIDFController(POS_P, POS_I, POS_D, POS_F);
     }
 
     /**
-     * @param isRed Set true for red alliance. Set false for blue alliance
+     * Zeros the motor encoder to the current physical position.
+     * Use this when the turret is manually centered.
      */
-    public void aimAndReady(boolean isRed) {
-        limelight.start();
-        LLResult llResult = limelight.getLatestResult();
+    public void zeroEncoder() {
+        yawMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        yawMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
 
-        // 1. Get Limelight Data
+    /**
+     * Points the turret back to the zero position using the encoder.
+     * This is used as a fallback when no target is seen.
+     */
+    public void reset() {
+        currentPos = yawMotor.getCurrentPosition();
+        // Target is 0 ticks (center)
+        double power = positionPID.calculate(currentPos, 0);
+        setSafePower(power);
+    }
+
+    /**
+     * Primary aim method using Limelight vision data.
+     * @param isRed If true, switches to pipeline 0 (Red). If false, switches to pipeline 1 (Blue).
+     */
+    public void aim(boolean isRed) {
+        // 1. Ensure Limelight is active
+        limelight.start();
+
+        // 2. Switch pipeline based on alliance
         limelight.pipelineSwitch(isRed ? 0 : 1);
 
-        if (llResult != null && llResult.isValid()) {
-            tx = (tx == 0 ? llResult.getTx() : Utilities.lowPassFilter(llResult.getTx(), tx, 0.1));
-            ty = llResult.getTy();
-            detectsAprilTag = true;
+        // 3. Fetch latest result
+        currentPos = yawMotor.getCurrentPosition();
+        LLResult result = limelight.getLatestResult();
 
-            // 2. Calculate Distance
-            double angleToGoalRad = Math.toRadians(CAMERA_MOUNT_ANGLE + ty);
-            rawDistance = -(TARGET_HEIGHT_INCHES - CAMERA_HEIGHT_INCHES) / Math.tan(angleToGoalRad);
+        // 4. Check if a target (AprilTag) is valid
+        if (result != null && result.isValid()) {
+            double tx = result.getTx(); // Angle offset in degrees
 
-            smoothedDistance = (smoothedDistance == 0 ? rawDistance : Utilities.lowPassFilter(rawDistance, smoothedDistance, SMOOTHING_ALPHA));
-
-            targetRPM = Utilities.linearPredict(smoothedDistance, RPM_M, RPM_B);
+            // Aiming target is tx = 0 (the center of the camera)
+            // Note: tx is already the error, so we calculate based on 0
+            double power = visionPID.calculate(tx, 0);
+            setSafePower(power);
         } else {
-            detectsAprilTag = false;
-            idle();
+            // ODOMETRY FALLBACK
+            double targetX = isRed ? 137.0 : 0.0;
+            double targetY = 143.0;
+
+            double robotX = follower.getPose().getX();
+            double robotY = follower.getPose().getY();
+            double robotHeading = follower.getPose().getHeading(); // Radians
+
+            // 1. Calculate field-centric angle to target (Y first!)
+            double fieldAngle = Math.atan2(targetY - robotY, targetX - robotX);
+
+            // 2. Subtract robot heading to get robot-relative angle
+            double relativeRadians = fieldAngle - robotHeading;
+
+            // 3. Normalize the angle (keep it between -PI and PI)
+            relativeRadians = AngleUnit.normalizeRadians(relativeRadians);
+
+            double targetTicks = radiansToTicks(relativeRadians);
+            double power = positionPID.calculate(currentPos, targetTicks);
+            setSafePower(power);
+        }
+    }
+
+    /**
+     * Helper method to apply motor power while respecting hardware limits.
+     * @param power The requested power from the PID controllers.
+     */
+    private void setSafePower(double power) {
+        double currentAngle = yawMotor.getCurrentPosition() / TICKS_PER_DEGREE;
+
+        // Prevent rotating past the 90 degree left limit
+        if (currentAngle <= LEFT_LIMIT_DEG && power < 0) {
+            yawMotor.setPower(0);
+        }
+        // Prevent rotating past the 75 degree right limit
+        else if (currentAngle >= RIGHT_LIMIT_DEG && power > 0) {
+            yawMotor.setPower(0);
+        }
+        else {
+            yawMotor.setPower(power);
         }
 
-
-        // 3. Set Yaw (Horizontal Aim)
-        currentYaw = yawMotor.getCurrentPosition();
-        yawCorrection = YAW_M * tx;
-        yawMotor.setTargetPosition((int) (currentYaw + yawCorrection));
-        yawMotor.setPower(yawMotorPower);
-
-
-        // 4. Set Pitch (Vertical Aim)
-//        pitchServo.setPosition(0.15);
-        pitchServo.setPosition(ballistics.calculatePitch(smoothedDistance));
-        // -3.1 is max
-        flywheelMotor.setPower(Utilities.voltageCompensate(flywheelController.calculate(ballistics.calculateFlywheelSpeed(smoothedDistance), flywheelMotor.getCurrentPosition()), Utilities.getBatteryVoltage(hMap)));
-
+        if (Math.abs(power) < 0.02) {
+            yawMotor.setPower(0);
+        }
     }
-    public void shoot () {
-        openGate();
-        kick();
-    }
+
     /**
-     * UPDATE LOOP
-     * Must be called every cycle to keep the flywheel PID running.
+     * Stops the turret motor immediately.
      */
-    public void update(double currentVoltage) {
-        // Get Position
-        double currentTicks = flywheelMotor.getCurrentPosition();
-
-        // Convert Target RPM to Target Ticks-Per-Second
-        double targetTPS = Utilities.rpmToTicksPerSec(targetRPM);
-
-
-        yawPowerPid = yawController.calculate(yawCorrection, yawMotor.getCurrentPosition());
-        yawMotor.setPower(yawPowerPid);
+    public void stop() {
+        yawMotor.setPower(0);
     }
 
-    public void idle () {
-        limelight.stop();
-        stopFlywheel();
-    }
-
-    public void openGate() {
-        gateServo.setPosition(GATE_OPEN);
-    }
-
-    public void closeGate() {
-        gateServo.setPosition(GATE_CLOSED);
-    }
-
-    public void kick() {
-        kickerServo.setPosition(KICK_POSITION);
-    }
-    public void resetKick(){
-        kickerServo.setPosition(KICK_RESET_POSITION);
-    }
-
-    public void stopFlywheel() {
-        targetRPM = 0;
-        flywheelController.reset(); // Reset integral/prev values when stopping
-        flywheelMotor.setPower(0.0);
-    }
-    public double getFlywheelPower () {return flywheelMotor.getPower();}
-    public void increaseHeight () { ballistics.pitchCorrection += 0.02; }
-    public void decreaseHeight () { ballistics.pitchCorrection -= 0.02; }
-    public void adjustHeight (double pitchCorrection) { ballistics.pitchCorrection += pitchCorrection;}
-    public void increaseFlywheelSpeed () {ballistics.pitchCorrection += 0.1; }
-    public void decreaseFlywheelSpeed () {ballistics.pitchCorrection -= 0.1; }
-    public void adjustFlywheelSpeed (double flywheelSpeedCorrection) { ballistics.flywheelSpeedCorrection += flywheelSpeedCorrection; }
-    public void resetLuts () {
-        ballistics.pitchCorrection = 0;
-        ballistics.flywheelSpeedCorrection = 0;
+    public double radiansToTicks (double radians) {
+        double degrees = Math.toDegrees(radians);
+        return degrees * TICKS_PER_DEGREE;
     }
 }

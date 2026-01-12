@@ -6,8 +6,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.resources.Utilities;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
-import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 // PEDRO PATHING IMPORTS
 import com.pedropathing.follower.Follower;
@@ -23,7 +23,7 @@ public class driveTestRed extends OpMode {
     // Subsystems
     private Intake intake;
     private Transfer transfer;
-    private Turret turret;
+    private Shooter shooter;
 
     // Pedro Pathing Follower (Handles Drivetrain)
     private Follower follower;
@@ -39,7 +39,7 @@ public class driveTestRed extends OpMode {
         // 2. Initialize Subsystems
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
-        turret = new Turret(hardwareMap);
+        shooter = new Shooter(hardwareMap);
 //        gateServo.setDirection(Servo.Direction.REVERSE);
 
         // 3. Initialize PedroPathing
@@ -49,7 +49,7 @@ public class driveTestRed extends OpMode {
         telemetryManager = PanelsTelemetry.INSTANCE.getTelemetry();
 
         // 4. Initialize Turret
-        turret.init();
+        shooter.init();
     }
 
     @Override
@@ -80,36 +80,36 @@ public class driveTestRed extends OpMode {
         }
 
         if (gamepad1.a) {
-            turret.aimAndReady(true);
-            turret.update(Utilities.getBatteryVoltage(hardwareMap));
+            shooter.aimAndReady(true);
+            shooter.update(Utilities.getBatteryVoltage(hardwareMap));
         } else {
-            turret.idle();
+            shooter.idle();
         }
 
         if (gamepad1.right_trigger > 0.1) {
-            turret.shoot();
+            shooter.shoot();
         } else {
-            turret.resetKick();
-            turret.closeGate();
+            shooter.resetKick();
+            shooter.closeGate();
         }
 
         if (gamepad1.dpad_up) {
-            turret.increaseHeight();
+            shooter.increaseHeight();
         } else if (gamepad1.dpad_down) {
-            turret.decreaseHeight();
+            shooter.decreaseHeight();
         }
 
         if (gamepad1.dpad_right) {
-            turret.increaseFlywheelSpeed();
+            shooter.increaseFlywheelSpeed();
         } else if (gamepad1.dpad_left) {
-            turret.decreaseFlywheelSpeed();
+            shooter.decreaseFlywheelSpeed();
         }
 
         if (gamepad1.y) {
-            turret.resetLuts();
+            shooter.resetLuts();
         }
 
-        //turret.update(Utilities.getBatteryVoltage(hardwareMap));
+        //shooter.update(Utilities.getBatteryVoltage(hardwareMap));
 
 //        if (gamepad1.y){
 //            transfer.kick();
@@ -119,15 +119,15 @@ public class driveTestRed extends OpMode {
 
         // Telemetry
         telemetry.addLine("Use Dpad left and right to adjust gate position");
-        telemetry.addData("Current Yaw", turret.currentYaw);
-        telemetry.addData("Tx", turret.tx);
-        telemetry.addData("Ty", turret.ty);
-        telemetry.addData("Yaw Correction", turret.yawCorrection);
-        telemetry.addData("Detects April Tag", turret.detectsAprilTag);
-        telemetry.addData("Distance From Target", turret.rawDistance);
-        telemetry.addData("Target RPM", turret.targetRPM);
-        telemetry.addData("Motor Power", turret.getFlywheelPower());
-        telemetry.addData("Yaw Power Pid", turret.yawPowerPid);
+        telemetry.addData("Current Yaw", shooter.currentYaw);
+        telemetry.addData("Tx", shooter.tx);
+        telemetry.addData("Ty", shooter.ty);
+        telemetry.addData("Yaw Correction", shooter.yawCorrection);
+        telemetry.addData("Detects April Tag", shooter.detectsAprilTag);
+        telemetry.addData("Distance From Target", shooter.rawDistance);
+        telemetry.addData("Target RPM", shooter.targetRPM);
+        telemetry.addData("Motor Power", shooter.getFlywheelPower());
+        telemetry.addData("Yaw Power Pid", shooter.yawPowerPid);
 //        telemetry.addData("Servo Position", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");

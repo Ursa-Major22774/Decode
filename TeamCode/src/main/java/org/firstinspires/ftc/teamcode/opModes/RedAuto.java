@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.resources.Utilities;
-import org.firstinspires.ftc.teamcode.subsystems.Turret;
+import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 @Autonomous(name = "Red Auto", group = "Competition Autos")
 @Configurable
@@ -23,7 +23,7 @@ public class RedAuto extends OpMode {
     private Timer pathTimer, opmodeTimer;
     private int pathState = 1; // Current autonomous path state (state machine)
     private Paths paths; // Paths defined in the Paths class
-    private Turret turret;
+    private Shooter shooter;
 
     @Override
     public void init() {
@@ -41,15 +41,15 @@ public class RedAuto extends OpMode {
         opmodeTimer = new Timer();
         opmodeTimer.resetTimer();
 
-        turret = new Turret(hardwareMap);
-        turret.init();
+        shooter = new Shooter(hardwareMap);
+        shooter.init();
 
         if (Utilities.getBatteryVoltage(hardwareMap) > 13.0) {
-            turret.adjustFlywheelSpeed(-0.2);
+            shooter.adjustFlywheelSpeed(-0.2);
         } else if (Utilities.getBatteryVoltage(hardwareMap) > 12.5) {
-            turret.adjustFlywheelSpeed(-0.1);
+            shooter.adjustFlywheelSpeed(-0.1);
         } else {
-            turret.adjustFlywheelSpeed(0);
+            shooter.adjustFlywheelSpeed(0);
         }
     }
 
@@ -102,11 +102,11 @@ public class RedAuto extends OpMode {
                 break;
             case 2:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() < 6) {
-                    turret.aimAndReady(true);
-                    turret.update(Utilities.getBatteryVoltage(hardwareMap));
+                    shooter.aimAndReady(true);
+                    shooter.update(Utilities.getBatteryVoltage(hardwareMap));
                 }
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() >= 5 && pathTimer.getElapsedTimeSeconds() < 6) {
-                    turret.shoot();
+                    shooter.shoot();
                 }
                 if ((!follower.isBusy()) && pathTimer.getElapsedTimeSeconds() > 7){
                     follower.followPath(paths.Path2);
@@ -116,7 +116,7 @@ public class RedAuto extends OpMode {
             case 3:
                 if (!follower.isBusy()) {
                     pathState = 0;
-                    turret.resetKick();
+                    shooter.resetKick();
                 }
                 break;
         }
