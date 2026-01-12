@@ -30,7 +30,7 @@ public class BlueAuto extends OpMode {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(72, 8, Math.toRadians(270)));
+        follower.setStartingPose(new Pose(56, 8, Math.toRadians(270)));
 
         paths = new Paths(follower); // Build paths
 
@@ -42,7 +42,15 @@ public class BlueAuto extends OpMode {
         opmodeTimer.resetTimer();
 
         turret = new Turret(hardwareMap);
+        turret.init();
 
+        if (Utilities.getBatteryVoltage(hardwareMap) > 13.0) {
+             turret.adjustFlywheelSpeed(-0.2);
+        } else if (Utilities.getBatteryVoltage(hardwareMap) > 12.5) {
+            turret.adjustFlywheelSpeed(-0.1);
+        } else {
+            turret.adjustFlywheelSpeed(0);
+        }
     }
 
     @Override
@@ -68,15 +76,15 @@ public class BlueAuto extends OpMode {
             Path1 = follower.pathBuilder().addPath(
                             new BezierLine(
                                     new Pose(56.000, 8.000),
-                                    new Pose(57.180, 87.462)
+                                    new Pose(56.000, 88.000)
                             )
                     ).setLinearHeadingInterpolation(Math.toRadians(270), Math.toRadians(225))
                     .build();
 
             Path2 = follower.pathBuilder().addPath(
                             new BezierLine(
-                                    new Pose(57.180, 87.462),
-                                    new Pose(40.026, 71.292)
+                                    new Pose(56.000, 88.000),
+                                    new Pose(40.000, 71.000)
                             )
                     ).setConstantHeadingInterpolation(Math.toRadians(225))
                     .build();
@@ -93,10 +101,14 @@ public class BlueAuto extends OpMode {
                 setPathState(pathState + 1);
                 break;
             case 2:
-                if (pathTimer.getElapsedTimeSeconds() < 5) {turret.aimAndReady(false); turret.update(Utilities.getBatteryVoltage(hardwareMap));}
-                else if (pathTimer.getElapsedTimeSeconds() >= 5 && pathTimer.getElapsedTimeSeconds() < 6)
-                    {turret.shoot(); turret.update(Utilities.getBatteryVoltage(hardwareMap));}
-                else if ((!follower.isBusy()) && pathTimer.getElapsedTimeSeconds() > 10){
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() < 6) {
+                    turret.aimAndReady(false);
+                    turret.update(Utilities.getBatteryVoltage(hardwareMap));
+                }
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() >= 5 && pathTimer.getElapsedTimeSeconds() < 6) {
+                    turret.shoot();
+                }
+                if ((!follower.isBusy()) && pathTimer.getElapsedTimeSeconds() > 7){
                     follower.followPath(paths.Path2);
                     setPathState(pathState + 1);
                 }
@@ -104,6 +116,7 @@ public class BlueAuto extends OpMode {
             case 3:
                 if (!follower.isBusy()) {
                     pathState = 0;
+                    turret.resetKick();
                 }
                 break;
         }

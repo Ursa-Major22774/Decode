@@ -101,7 +101,7 @@ public class Turret {
         // Start closed
         gateServo.setPosition(GATE_CLOSED);
 
-        ballistics = new LookUpTables();
+        ballistics = new LookUpTables(hardwareMap);
 
     }
 
@@ -115,6 +115,7 @@ public class Turret {
         flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         limelight.deleteSnapshots();
+        resetLuts();
     }
 
     /**
@@ -153,13 +154,10 @@ public class Turret {
 
 
         // 4. Set Pitch (Vertical Aim)
-//        pitchCorrection = Utilities.linearPredict(smoothedDistance, PITCH_M, PITCH_B);
-        pitchServo.setPosition(0.15);
-//        pitchServo.setPosition(ballistics.calculatePitch(smoothedDistance));
-//        pitchServo.setPosition();
+//        pitchServo.setPosition(0.15);
+        pitchServo.setPosition(ballistics.calculatePitch(smoothedDistance));
         // -3.1 is max
         flywheelMotor.setPower(Utilities.voltageCompensate(flywheelController.calculate(ballistics.calculateFlywheelSpeed(smoothedDistance), flywheelMotor.getCurrentPosition()), Utilities.getBatteryVoltage(hMap)));
-//        flywheelMotor.setPower(ballistics.calculateFlywheelSpeed(smoothedDistance));
 
     }
     public void shoot () {
@@ -208,4 +206,14 @@ public class Turret {
         flywheelMotor.setPower(0.0);
     }
     public double getFlywheelPower () {return flywheelMotor.getPower();}
+    public void increaseHeight () { ballistics.pitchCorrection += 0.02; }
+    public void decreaseHeight () { ballistics.pitchCorrection -= 0.02; }
+    public void adjustHeight (double pitchCorrection) { ballistics.pitchCorrection += pitchCorrection;}
+    public void increaseFlywheelSpeed () {ballistics.pitchCorrection += 0.1; }
+    public void decreaseFlywheelSpeed () {ballistics.pitchCorrection -= 0.1; }
+    public void adjustFlywheelSpeed (double flywheelSpeedCorrection) { ballistics.flywheelSpeedCorrection += flywheelSpeedCorrection; }
+    public void resetLuts () {
+        ballistics.pitchCorrection = 0;
+        ballistics.flywheelSpeedCorrection = 0;
+    }
 }

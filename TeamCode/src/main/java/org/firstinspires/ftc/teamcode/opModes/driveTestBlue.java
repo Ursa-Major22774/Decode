@@ -93,6 +93,22 @@ public class driveTestBlue extends OpMode {
             turret.closeGate();
         }
 
+        if (gamepad1.dpad_up) {
+            turret.increaseHeight();
+        } else if (gamepad1.dpad_down) {
+            turret.decreaseHeight();
+        }
+
+        if (gamepad1.dpad_right) {
+            turret.increaseFlywheelSpeed();
+        } else if (gamepad1.dpad_left) {
+            turret.decreaseFlywheelSpeed();
+        }
+
+        if (gamepad1.y) {
+            turret.resetLuts();
+        }
+
         //turret.update(Utilities.getBatteryVoltage(hardwareMap));
 
 //        if (gamepad1.y){

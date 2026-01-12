@@ -11,8 +11,7 @@ import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.subsystems.Intake;
-import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.resources.Utilities;
 import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 @Autonomous(name = "Red Auto", group = "Competition Autos")
@@ -24,16 +23,14 @@ public class RedAuto extends OpMode {
     private Timer pathTimer, opmodeTimer;
     private int pathState = 1; // Current autonomous path state (state machine)
     private Paths paths; // Paths defined in the Paths class
-    private Intake intake;
-//    private Transfer transfer;
-//    private Turret turret;
+    private Turret turret;
 
     @Override
     public void init() {
         panelsTelemetry = PanelsTelemetry.INSTANCE.getTelemetry();
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(87.726, 8.194, Math.toRadians(90)));
+        follower.setStartingPose(new Pose(88, 8, Math.toRadians(90)));
 
         paths = new Paths(follower); // Build paths
 
@@ -44,11 +41,16 @@ public class RedAuto extends OpMode {
         opmodeTimer = new Timer();
         opmodeTimer.resetTimer();
 
-        intake = new Intake(hardwareMap);
-//        transfer = new Transfer(hardwareMap);
-//        turret = new Turret(hardwareMap);
+        turret = new Turret(hardwareMap);
+        turret.init();
 
-
+        if (Utilities.getBatteryVoltage(hardwareMap) > 13.0) {
+            turret.adjustFlywheelSpeed(-0.2);
+        } else if (Utilities.getBatteryVoltage(hardwareMap) > 12.5) {
+            turret.adjustFlywheelSpeed(-0.1);
+        } else {
+            turret.adjustFlywheelSpeed(0);
+        }
     }
 
     @Override
@@ -66,69 +68,25 @@ public class RedAuto extends OpMode {
 
     @Configurable
     public static class Paths {
+
         public static PathChain Path1;
         public static PathChain Path2;
-        public static PathChain Path3;
-        public static PathChain Path4;
-        public static PathChain Path5;
-        public static PathChain Path6;
-        public static PathChain Path7;
 
         public Paths(Follower follower) {
-            Path1 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(87.726, 8.194), new Pose(103.511, 35.307))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
+            Path1 = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(88.000, 8.000),
+                                    new Pose(88.000, 88.000)
+                            )
+                    ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(135))
                     .build();
 
-            Path2 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(103.511, 35.307), new Pose(129.660, 36.030))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
-                    .build();
-
-            Path3 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(129.660, 36.030), new Pose(99.896, 7.592))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
-                    .build();
-
-            Path4 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(99.896, 7.592), new Pose(103.391, 59.528))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
-                    .build();
-
-            Path5 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(103.391, 59.528), new Pose(130.142, 59.649))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
-                    .build();
-
-            Path6 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(130.142, 59.649), new Pose(89.533, 76.037))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
-                    .build();
-
-            Path7 = follower
-                    .pathBuilder()
-                    .addPath(
-                            new BezierLine(new Pose(89.533, 76.037), new Pose(101.488, 82.567))
-                    )
-                    .setConstantHeadingInterpolation(Math.toRadians(90))
+            Path2 = follower.pathBuilder().addPath(
+                            new BezierLine(
+                                    new Pose(88.000, 88.000),
+                                    new Pose(110.000, 71.000)
+                            )
+                    ).setConstantHeadingInterpolation(Math.toRadians(135))
                     .build();
         }
     }
@@ -143,48 +101,22 @@ public class RedAuto extends OpMode {
                 setPathState(pathState + 1);
                 break;
             case 2:
-                if (!follower.isBusy()){
-                    intake.intake();
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() < 6) {
+                    turret.aimAndReady(true);
+                    turret.update(Utilities.getBatteryVoltage(hardwareMap));
+                }
+                if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() >= 5 && pathTimer.getElapsedTimeSeconds() < 6) {
+                    turret.shoot();
+                }
+                if ((!follower.isBusy()) && pathTimer.getElapsedTimeSeconds() > 7){
                     follower.followPath(paths.Path2);
                     setPathState(pathState + 1);
                 }
                 break;
             case 3:
-                if (!follower.isBusy()){
-                    intake.stop();
-                    follower.followPath(paths.Path3);
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 4:
-                if (!follower.isBusy()){
-                    follower.followPath(paths.Path4);
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 5:
-                if (!follower.isBusy()){
-                    intake.intake();
-                    follower.followPath(paths.Path5);
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 6:
-                if (!follower.isBusy()){
-                    intake.stop();
-                    follower.followPath(paths.Path6);
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 7:
-                if (!follower.isBusy()){
-                    follower.followPath(paths.Path7);
-                    setPathState(pathState + 1);
-                }
-                break;
-            case 8:
                 if (!follower.isBusy()) {
                     pathState = 0;
+                    turret.resetKick();
                 }
                 break;
         }
