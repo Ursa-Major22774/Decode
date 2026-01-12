@@ -16,14 +16,17 @@ import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
+
 @Configurable
-@TeleOp(name = "Drive Test (Red)", group = "Competition OpModes")
-public class driveTestRed extends OpMode {
+@TeleOp(name = "Blue TeleOp", group = "Competition OpModes")
+public class BlueTeleOp extends OpMode {
 
     // Subsystems
     private Intake intake;
     private Transfer transfer;
     private Shooter shooter;
+    private Turret turret;
 
     // Pedro Pathing Follower (Handles Drivetrain)
     private Follower follower;
@@ -39,17 +42,14 @@ public class driveTestRed extends OpMode {
         // 2. Initialize Subsystems
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
-        shooter = new Shooter(hardwareMap);
-//        gateServo.setDirection(Servo.Direction.REVERSE);
+        shooter = new Shooter(hardwareMap, follower);
+        turret = new Turret(hardwareMap, follower);
 
         // 3. Initialize PedroPathing
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(0, 0, 0));
         follower.update();
         telemetryManager = PanelsTelemetry.INSTANCE.getTelemetry();
 
-        // 4. Initialize Turret
-        shooter.init();
     }
 
     @Override
@@ -59,17 +59,17 @@ public class driveTestRed extends OpMode {
 
     @Override
     public void loop() {
-        // --- 1. DRIVETRAIN (PedroPathing) ---4
+        // --- 1. DRIVETRAIN (PedroPathing) ---
         // Stick Y is inverted (Up is negative on standard gamepads)
         follower.setTeleOpDrive(
                 -gamepad1.left_stick_x, // Forward/Back
-                gamepad1.left_stick_y, // Strafe
+                +gamepad1.left_stick_y, // Strafe
                 -gamepad1.right_stick_x * 0.6, // Turn
                 true // TRUE = Robot Centric
         );
         follower.update();
 
-        // --- 2. INTAKE LOGIC ---x
+        // --- 2. INTAKE LOGIC ---
         // Left Trigger = Intake
         if (gamepad1.left_trigger > 0.1) {
             intake.intake();
@@ -79,20 +79,23 @@ public class driveTestRed extends OpMode {
             transfer.stop();
         }
 
-        if (gamepad1.a) {
-            shooter.aimAndReady(true);
-            shooter.update(Utilities.getBatteryVoltage(hardwareMap));
+        // --- 3. Prepare Shot ---
+        if (gamepad1.right_bumper) {
+            turret.aim(false);
+            shooter.accelerateFlywheel(false);
         } else {
             shooter.idle();
+            turret.reset();
         }
 
+        // --- 3. Shoot ---
         if (gamepad1.right_trigger > 0.1) {
-            shooter.shoot();
+            transfer.kick();
         } else {
-            shooter.resetKick();
-            shooter.closeGate();
+            transfer.resetKick();
         }
 
+        // --- Adjust Shooting ---
         if (gamepad1.dpad_up) {
             shooter.increaseHeight();
         } else if (gamepad1.dpad_down) {
@@ -109,25 +112,21 @@ public class driveTestRed extends OpMode {
             shooter.resetLuts();
         }
 
-        //shooter.update(Utilities.getBatteryVoltage(hardwareMap));
+        // --- Reset Yaw Encoder ---
+        if (gamepad1.b) {
+            turret.zeroEncoder();
+        }
 
-//        if (gamepad1.y){
-//            transfer.kick();
-//        } else {
-//            transfer.resetKick();
-//        }
 
         // Telemetry
         telemetry.addLine("Use Dpad left and right to adjust gate position");
-        telemetry.addData("Current Yaw", shooter.currentYaw);
-        telemetry.addData("Tx", shooter.tx);
+        telemetry.addData("Current Yaw", turret.getCurrentPosition());
+        telemetry.addData("Tx", turret.getTx());
         telemetry.addData("Ty", shooter.ty);
-        telemetry.addData("Yaw Correction", shooter.yawCorrection);
         telemetry.addData("Detects April Tag", shooter.detectsAprilTag);
         telemetry.addData("Distance From Target", shooter.rawDistance);
         telemetry.addData("Target RPM", shooter.targetRPM);
-        telemetry.addData("Motor Power", shooter.getFlywheelPower());
-        telemetry.addData("Yaw Power Pid", shooter.yawPowerPid);
+        telemetry.addData("Flywheel Power", shooter.getFlywheelPower());
 //        telemetry.addData("Servo Position", servoPosition);
         telemetry.addData("State", "Running");
         telemetry.addData("Flywheel Target", "See Dashboard");

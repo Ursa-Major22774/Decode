@@ -13,17 +13,20 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.resources.Utilities;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.subsystems.Turret;
 
 @Autonomous(name = "Blue Auto", group = "Competition Autos")
 @Configurable
 public class BlueAuto extends OpMode {
-
     private TelemetryManager panelsTelemetry; // Panels Telemetry instance
     public Follower follower; // Pedro Pathing follower instance
-    private Timer pathTimer, opmodeTimer;
+    private Timer pathTimer;
     private int pathState = 1; // Current autonomous path state (state machine)
     private Paths paths; // Paths defined in the Paths class
     private Shooter shooter;
+    private Turret turret;
+    private Transfer transfer;
 
     @Override
     public void init() {
@@ -38,11 +41,10 @@ public class BlueAuto extends OpMode {
         panelsTelemetry.update(telemetry);
 
         pathTimer = new Timer();
-        opmodeTimer = new Timer();
-        opmodeTimer.resetTimer();
 
-        shooter = new Shooter(hardwareMap);
-        shooter.init();
+        shooter = new Shooter(hardwareMap, follower);
+        turret = new Turret(hardwareMap, follower);
+        transfer = new Transfer(hardwareMap);
 
         if (Utilities.getBatteryVoltage(hardwareMap) > 13.0) {
              shooter.adjustFlywheelSpeed(-0.2);
@@ -68,7 +70,6 @@ public class BlueAuto extends OpMode {
 
     @Configurable
     public static class Paths {
-
         public static PathChain Path1;
         public static PathChain Path2;
 
@@ -102,21 +103,23 @@ public class BlueAuto extends OpMode {
                 break;
             case 2:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() < 6) {
-                    shooter.aimAndReady(false);
-                    shooter.update(Utilities.getBatteryVoltage(hardwareMap));
+                    turret.aim(false);
+                    shooter.accelerateFlywheel(false);
                 }
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() >= 5 && pathTimer.getElapsedTimeSeconds() < 6) {
-                    shooter.shoot();
+                    transfer.kick();
                 }
                 if ((!follower.isBusy()) && pathTimer.getElapsedTimeSeconds() > 7){
                     follower.followPath(paths.Path2);
                     setPathState(pathState + 1);
+                    turret.reset();
+                    shooter.idle();
                 }
                 break;
             case 3:
                 if (!follower.isBusy()) {
                     pathState = 0;
-                    shooter.resetKick();
+                    transfer.resetKick();
                 }
                 break;
         }

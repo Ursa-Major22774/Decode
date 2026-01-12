@@ -18,17 +18,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 public class Turret {
 
     // --- Follower for atan2 ---
-    private Follower follower;
+    private final Follower follower;
 
     // --- Hardware Objects ---
-    private DcMotorEx yawMotor;
-    private Limelight3A limelight;
+    private final DcMotorEx yawMotor;
+    private final Limelight3A limelight;
 
     // --- PID Controllers ---
     // One for aiming at a target (based on degrees/tx)
     // One for resetting to zero (based on encoder ticks)
-    private PIDFController visionPID;
-    private PIDFController positionPID;
+    private final PIDFController visionPID;
+    private final PIDFController positionPID;
 
     // --- Tunable Constants (Set to 0.0 for initial tuning) ---
     public static double VISION_P = 0.0;
@@ -44,11 +44,8 @@ public class Turret {
     /** Conversion factor: how many encoder ticks are in one degree of turret rotation */
     public static double TICKS_PER_DEGREE = 0.0;
 
-    // --- Soft Limits (Degrees) ---
-    private final double LEFT_LIMIT_DEG = -90.0;
-    private final double RIGHT_LIMIT_DEG = 75.0;
-
     private double currentPos;
+    private double tx;
 
     /**
      * Constructor for the TurretSubsystem.
@@ -68,6 +65,9 @@ public class Turret {
         // Initialize PID Controllers
         visionPID = new PIDFController(VISION_P, VISION_I, VISION_D, VISION_F);
         positionPID = new PIDFController(POS_P, POS_I, POS_D, POS_F);
+
+        // Initialize Follower
+        this.follower = follower;
     }
 
     /**
@@ -84,6 +84,7 @@ public class Turret {
      * This is used as a fallback when no target is seen.
      */
     public void reset() {
+        limelight.pause();
         currentPos = yawMotor.getCurrentPosition();
         // Target is 0 ticks (center)
         double power = positionPID.calculate(currentPos, 0);
@@ -107,7 +108,7 @@ public class Turret {
 
         // 4. Check if a target (AprilTag) is valid
         if (result != null && result.isValid()) {
-            double tx = result.getTx(); // Angle offset in degrees
+            tx = result.getTx(); // Angle offset in degrees
 
             // Aiming target is tx = 0 (the center of the camera)
             // Note: tx is already the error, so we calculate based on 0
@@ -142,6 +143,10 @@ public class Turret {
      * @param power The requested power from the PID controllers.
      */
     private void setSafePower(double power) {
+        // --- Soft Limits (Degrees) ---
+        final double LEFT_LIMIT_DEG = -90.0;
+        final double RIGHT_LIMIT_DEG = 75.0;
+
         double currentAngle = yawMotor.getCurrentPosition() / TICKS_PER_DEGREE;
 
         // Prevent rotating past the 90 degree left limit
@@ -161,15 +166,16 @@ public class Turret {
         }
     }
 
-    /**
-     * Stops the turret motor immediately.
-     */
-    public void stop() {
-        yawMotor.setPower(0);
-    }
-
     public double radiansToTicks (double radians) {
         double degrees = Math.toDegrees(radians);
         return degrees * TICKS_PER_DEGREE;
+    }
+
+    public double getTx () {
+        return tx;
+    }
+
+    public double getCurrentPosition () {
+        return currentPos;
     }
 }
