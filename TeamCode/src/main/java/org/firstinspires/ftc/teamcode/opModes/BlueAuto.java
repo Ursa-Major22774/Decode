@@ -98,6 +98,9 @@ public class BlueAuto extends OpMode {
         // Refer to the Pedro Pathing Docs (Auto Example) for an example state machine
         switch(pathState) {
             case 1:
+                turret.reset();
+                shooter.idle();
+
                 follower.followPath(paths.Path1);
                 setPathState(pathState + 1);
                 break;

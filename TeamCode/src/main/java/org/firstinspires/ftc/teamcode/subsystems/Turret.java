@@ -68,6 +68,9 @@ public class Turret {
 
         // Initialize Follower
         this.follower = follower;
+
+        // Start Limelight
+        limelight.start();
     }
 
     /**

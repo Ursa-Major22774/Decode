@@ -55,6 +55,9 @@ public class Shooter {
         this.follower = follower;
 
         resetLuts();
+
+        // Start Limelight
+        limelight.start();
     }
 
     /**

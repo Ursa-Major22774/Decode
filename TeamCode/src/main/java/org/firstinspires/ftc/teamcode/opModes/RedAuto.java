@@ -104,6 +104,10 @@ public class RedAuto extends OpMode {
             case 1:
                 follower.followPath(paths.Path1);
                 setPathState(pathState + 1);
+
+                turret.reset();
+                shooter.idle();
+
                 break;
             case 2:
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() < 6) {
