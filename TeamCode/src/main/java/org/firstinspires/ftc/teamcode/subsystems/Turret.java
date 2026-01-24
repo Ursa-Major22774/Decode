@@ -91,7 +91,7 @@ public class Turret {
         currentPos = yawMotor.getCurrentPosition();
         // Target is 0 ticks (center)
         double power = positionPID.calculate(currentPos, 0);
-        setSafePower(power);
+        setSafeYawPower(power);
     }
 
     /**
@@ -116,7 +116,7 @@ public class Turret {
             // Aiming target is tx = 0 (the center of the camera)
             // Note: tx is already the error, so we calculate based on 0
             double power = visionPID.calculate(tx, 0);
-            setSafePower(power);
+            setSafeYawPower(power);
         } else {
             // ODOMETRY FALLBACK
             double targetX = isRed ? 137.0 : 0.0;
@@ -137,7 +137,7 @@ public class Turret {
 
             double targetTicks = radiansToTicks(relativeRadians);
             double power = positionPID.calculate(currentPos, targetTicks);
-            setSafePower(power);
+            setSafeYawPower(power);
         }
     }
 
@@ -145,7 +145,7 @@ public class Turret {
      * Helper method to apply motor power while respecting hardware limits.
      * @param power The requested power from the PID controllers.
      */
-    private void setSafePower(double power) {
+    private void setSafeYawPower(double power) {
         // --- Soft Limits (Degrees) ---
         final double LEFT_LIMIT_DEG = -90.0;
         final double RIGHT_LIMIT_DEG = 75.0;

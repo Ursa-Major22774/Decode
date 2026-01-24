@@ -35,20 +35,21 @@ public class RedTeleOp extends OpMode {
 
     @Override
     public void init() {
-        // 1. Optimize Hardware Reads
+        /// Initialize Follower
+        follower = Constants.createFollower(hardwareMap);
+        follower.update();
+
+        // Optimize Hardware Reads
         Utilities.setBulkReadAuto(hardwareMap);
 
-        // 2. Initialize Subsystems
+        // Initialize Subsystems
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         shooter = new Shooter(hardwareMap, follower);
         turret = new Turret(hardwareMap, follower);
 
-        // 3. Initialize PedroPathing
-        follower = Constants.createFollower(hardwareMap);
-        follower.update();
+        // Initialize Telemetry Manager
         telemetryManager = PanelsTelemetry.INSTANCE.getTelemetry();
-
     }
 
     @Override
@@ -79,7 +80,7 @@ public class RedTeleOp extends OpMode {
         }
 
         // --- 3. Prepare Shot ---
-        if (gamepad1.right_bumper) {
+        if (gamepad2.right_bumper) {
             turret.aim(true);
             shooter.accelerateFlywheel(true);
         } else {
@@ -88,22 +89,22 @@ public class RedTeleOp extends OpMode {
         }
 
         // --- 3. Shoot ---
-        if (gamepad1.right_trigger > 0.1) {
+        if (gamepad2.right_trigger > 0.1) {
             transfer.kick();
         } else {
             transfer.resetKick();
         }
 
         // --- Adjust Shooting ---
-        if (gamepad1.dpad_up) {
+        if (gamepad2.dpad_up) {
             shooter.increaseHeight();
-        } else if (gamepad1.dpad_down) {
+        } else if (gamepad2.dpad_down) {
             shooter.decreaseHeight();
         }
 
-        if (gamepad1.dpad_right) {
+        if (gamepad2.dpad_right) {
             shooter.increaseFlywheelSpeed();
-        } else if (gamepad1.dpad_left) {
+        } else if (gamepad2.dpad_left) {
             shooter.decreaseFlywheelSpeed();
         }
 
