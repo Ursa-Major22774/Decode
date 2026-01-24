@@ -115,6 +115,7 @@ public class Turret {
         flywheelMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         limelight.deleteSnapshots();
+        limelight.start();
         resetLuts();
     }
 
@@ -181,7 +182,7 @@ public class Turret {
     }
 
     public void idle () {
-        limelight.stop();
+        limelight.pause();
         stopFlywheel();
     }
 
@@ -209,8 +210,8 @@ public class Turret {
     public void increaseHeight () { ballistics.pitchCorrection += 0.02; }
     public void decreaseHeight () { ballistics.pitchCorrection -= 0.02; }
     public void adjustHeight (double pitchCorrection) { ballistics.pitchCorrection += pitchCorrection;}
-    public void increaseFlywheelSpeed () {ballistics.pitchCorrection += 0.1; }
-    public void decreaseFlywheelSpeed () {ballistics.pitchCorrection -= 0.1; }
+    public void increaseFlywheelSpeed () {ballistics.flywheelSpeedCorrection += 0.1; }
+    public void decreaseFlywheelSpeed () {ballistics.flywheelSpeedCorrection -= 0.1; }
     public void adjustFlywheelSpeed (double flywheelSpeedCorrection) { ballistics.flywheelSpeedCorrection += flywheelSpeedCorrection; }
     public void resetLuts () {
         ballistics.pitchCorrection = 0;
